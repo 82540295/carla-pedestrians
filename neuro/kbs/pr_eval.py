@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""pr_eval.py — DL-NLM Phase 0 零样本闭环评估 (DINOv2 vs ORB vs oracle)
-
-DINOv2 候选: 帧 i 取 arc 距离 > D_arc 的最相似 j (cos > τ), 事件合并; 对 oracle (GT R=5m, D_arc=50m) 算 P/R。
-ORB 基线: experiences.mat 的 link (json 口径 1<=eid<=k), 逐边查 GT 距离/弧长 → TP/FP。
-事件匹配: 候选 (j,i) 与 oracle (jo,io) 若两端空间距离 < 10m 记为匹配。
-"""
 import os
 
 import numpy as np

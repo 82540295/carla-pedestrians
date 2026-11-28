@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""diag_pr_gates.py — 离线复刻 MATLAB PR 检测器门链 + oracle 真环逐环归因
-
-目的 (#24): 定位 Town07 召回/精度缺口 — 10 个真环哪些被哪个门杀掉, 还是模型没认出。
-MATLAB 语义 (core L541-638, 1-based 帧号):
-- PR_ODO_ARC = fusion_data.pos (EKF-odo) 累计距离; 窗 w = max{j<i : arc[j] <= arc[i]-50}
-- 候选 j* = argmax_j sim(i,j), s* = sim(i,j*) (嵌入 L2 归一, 点积=余弦)
-- 持续性门 (仅 s*>=τ 时更新): j*==last 或 |j*-last|<=10 → streak+=1 否则 1; s<τ 重置
-- 事件: s*>=0.9 && streak>=15 && (i-last_ev>=30) && 航向门(|dyaw|<=60° 或反向) && i-j*>=300
-- 命中 → last_ev = i
-Oracle (pr_eval.py 口径): GT R=5m, GT弧Δ>50m, merge_gap=30
-用法: python diag_pr_gates.py [Set1 Set2 ...]
-"""
 import sys
 
 import numpy as np
@@ -42,7 +30,7 @@ def simulate(emb, odo_pos, odo_yaw):
     N = len(odo_pos)
     arc = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(odo_pos, axis=0), axis=1))])
     S = emb @ emb.T
-    jstar = np.zeros(N, dtype=int)   # 0-based 候选 (-1 = 无窗)
+    jstar = np.zeros(N, dtype=int)
     sstar = np.full(N, -1.0)
     streak_arr = np.zeros(N, dtype=int)
     events = []                       # (i, j) 1-based
@@ -118,7 +106,6 @@ def main():
         print(f'模拟器事件={len(ev)}  TP={tp} FP={len(ev) - tp}  oracle环={len(oracle)}')
         for i, j in ev:
             print(f'  事件 (i={i}, j={j}) s*={sstar[i - 1]:.3f} dist_gt={np.linalg.norm(gt[i - 1] - gt[j - 1]):6.1f}m')
-        # ---- 逐 oracle 环归因 ----
         print(f'-- oracle 真环归因 (io=回访帧, jo=旧帧) --')
         for m_, (jo, io) in enumerate(oracle):
             i, j = io, jstar[io - 1] + 1

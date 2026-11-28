@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-生成Method部分的详细示意图
-包括：3D Grid Cells、Head Direction Cells、Visual Template处理流程
 """
 
 import os
@@ -24,7 +22,7 @@ fig1.suptitle('Enhanced Visual Template Processing Pipeline', fontsize=14, weigh
 
 # Step 1: Original Image
 ax1 = axes[0]
-img = np.random.rand(120, 160, 3)  # 模拟RGB图像
+img = np.random.rand(120, 160, 3)
 ax1.imshow(img)
 ax1.set_title('(a) Input Image\n120×160 RGB', fontsize=10)
 ax1.axis('off')
@@ -60,9 +58,9 @@ ax5.axis('off')
 
 plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'vt_pipeline.pdf', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 plt.savefig(os.path.join(OUTPUT_DIR, 'vt_pipeline.png', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 print("✅ VT Pipeline diagram saved")
 plt.close()
 
@@ -78,12 +76,10 @@ y = np.arange(ny)
 z = np.arange(nz)
 X, Y, Z = np.meshgrid(x, y, z)
 
-# 模拟活动包
 center_x, center_y, center_z = 10, 10, 5
 activity = np.exp(-((X - center_x)**2 + (Y - center_y)**2 + (Z - center_z)**2) / 20)
 activity = activity / activity.max()
 
-# 只显示高活动的点
 mask = activity > 0.3
 ax1.scatter(X[mask], Y[mask], Z[mask], c=activity[mask], 
            cmap='hot', s=50, alpha=0.6)
@@ -95,7 +91,6 @@ ax1.set_title('(a) 3D Activity Packet', fontsize=11)
 # 2D projection showing grid pattern
 ax2 = fig2.add_subplot(122)
 grid_pattern = np.zeros((30, 30))
-# 创建六边形网格模式
 for i in range(0, 30, 6):
     for j in range(0, 30, 6):
         y_offset = (i // 6) % 2 * 3
@@ -109,9 +104,9 @@ ax2.grid(False)
 
 plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'grid_cell_activity.pdf', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 plt.savefig(os.path.join(OUTPUT_DIR, 'grid_cell_activity.png', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 print("✅ Grid Cell Activity diagram saved")
 plt.close()
 
@@ -129,8 +124,7 @@ for layer in range(layers):
     y = r * np.sin(theta)
     ax1.plot(x, y, 'k-', linewidth=0.5, alpha=0.3)
     
-# 显示活动包
-active_theta = np.pi / 4  # 45度
+active_theta = np.pi / 4
 active_layer = 2
 r = 1 + active_layer * 0.3
 width = np.pi / 6
@@ -151,10 +145,9 @@ ax1.set_ylabel('North-South')
 
 # HDC activity matrix
 ax2 = axes[1]
-n_theta, n_h = 36, 5  # 36方向 × 5层
+n_theta, n_h = 36, 5
 hdc_activity = np.zeros((n_h, n_theta))
-# 模拟活动包
-active_dir = 9  # 90度
+active_dir = 9
 active_layer = 2
 hdc_activity[active_layer, active_dir-2:active_dir+3] = [0.5, 0.8, 1.0, 0.8, 0.5]
 hdc_activity[active_layer-1, active_dir-1:active_dir+2] = [0.3, 0.5, 0.3]
@@ -170,9 +163,9 @@ plt.colorbar(im, ax=ax2, label='Activity')
 
 plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'hdc_network.pdf', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 plt.savefig(os.path.join(OUTPUT_DIR, 'hdc_network.png', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 print("✅ HDC Network diagram saved")
 plt.close()
 
@@ -180,42 +173,34 @@ plt.close()
 fig4, ax = plt.subplots(1, 1, figsize=(10, 8))
 ax.set_title('Multilayered Experience Map with Loop Closure', fontsize=14, weight='bold')
 
-# 创建一个模拟的经验地图
 np.random.seed(42)
 n_nodes = 50
 
-# 生成轨迹
 t = np.linspace(0, 4*np.pi, n_nodes)
 x = 5 * t * np.cos(t) / (4*np.pi)
 y = 5 * t * np.sin(t) / (4*np.pi)
 
-# 添加回环
 loop_idx = 45
 x[loop_idx:] = x[loop_idx:] - (x[loop_idx] - x[5]) * np.linspace(0, 1, n_nodes-loop_idx)
 y[loop_idx:] = y[loop_idx:] - (y[loop_idx] - y[5]) * np.linspace(0, 1, n_nodes-loop_idx)
 
-# 绘制节点和连接
 for i in range(n_nodes-1):
     ax.plot([x[i], x[i+1]], [y[i], y[i+1]], 'b-', linewidth=1, alpha=0.5)
     
-# 绘制节点
 scatter = ax.scatter(x, y, c=range(n_nodes), cmap='viridis', s=100, 
                     edgecolors='black', linewidth=1, zorder=10)
 
-# 标记起点和终点
 ax.scatter(x[0], y[0], s=300, c='green', marker='*', 
           edgecolors='black', linewidth=2, zorder=15, label='Start')
 ax.scatter(x[-1], y[-1], s=300, c='red', marker='*', 
           edgecolors='black', linewidth=2, zorder=15, label='End')
 
-# 标记回环
 ax.plot([x[loop_idx], x[5]], [y[loop_idx], y[5]], 'r--', 
        linewidth=3, label='Loop Closure', zorder=20)
 ax.scatter([x[loop_idx], x[5]], [y[loop_idx], y[5]], 
           s=200, c='orange', marker='o', edgecolors='red', 
           linewidth=2, zorder=20)
 
-# 添加一些节点标签
 for i in [0, 10, 20, 30, 40, loop_idx]:
     ax.annotate(f'E{i}', (x[i], y[i]), 
                xytext=(5, 5), textcoords='offset points',
@@ -231,9 +216,9 @@ plt.colorbar(scatter, ax=ax, label='Experience Node Index')
 
 plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'experience_map.pdf', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 plt.savefig(os.path.join(OUTPUT_DIR, 'experience_map.png', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 print("✅ Experience Map diagram saved")
 plt.close()
 
@@ -244,7 +229,7 @@ fig5.suptitle('Visual Template Matching Analysis', fontsize=14, weight='bold')
 # VT Distance Histogram
 ax1 = axes[0]
 np.random.seed(42)
-distances = np.random.beta(2, 5, 299) * 0.08  # 模拟距离分布
+distances = np.random.beta(2, 5, 299) * 0.08
 ax1.hist(distances, bins=30, color='skyblue', edgecolor='black', alpha=0.7)
 ax1.axvline(x=0.07, color='red', linestyle='--', linewidth=2, label='Threshold=0.07')
 ax1.set_xlabel('Cosine Distance', fontsize=11)
@@ -263,7 +248,6 @@ ax2.set_ylabel('Number of Visual Templates', fontsize=11)
 ax2.set_title('(b) VT Recognition Comparison\n(+5,880% improvement)', fontsize=11)
 ax2.grid(True, alpha=0.3, axis='y')
 
-# 添加数值标签
 for i, (bar, count) in enumerate(zip(bars, vt_counts)):
     height = bar.get_height()
     ax2.text(bar.get_x() + bar.get_width()/2., height,
@@ -271,9 +255,9 @@ for i, (bar, count) in enumerate(zip(bars, vt_counts)):
 
 plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'vt_analysis.pdf', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 plt.savefig(os.path.join(OUTPUT_DIR, 'vt_analysis.png', 
-            dpi=300, bbox_inches='tight')
+            dpi=300, bbox_inches='tight'))
 print("✅ VT Analysis diagram saved")
 plt.close()
 

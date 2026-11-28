@@ -1,24 +1,4 @@
 #!/usr/bin/env python3
-"""afix_prototype.py — A-fix 字段形态原型 (Python, 不跑 MATLAB)
-
-背景 (#23): 约束模式下去硬重锚定后, 内部轨迹在 t_now 处不再跳变 (零地图反馈),
-但 A-fix 字段仍是旧形态: 只在 [t_old, t_now) 爬坡, t_now 之后归零 →
-闭环残差在尾部 (漂移最大处) 从未被校正 = NLM 不提效的根因。
-另外多事件对同一场所重复注入 → 叠加触顶 35m 过冲 (Town07/10HD 负值来源)。
-
-方法: 从已提交的 p2ft 产物反解 raw 内部轨迹 (raw = final - L_old),
-再在 raw 上试新形态, 直接算 sim3_full ATE:
-  A  现形态:    爬坡 [t_old,t_now), 之后 0; 逐帧去重; cap35
-  B  hold-c:    爬坡后保持 c 至轨迹末; 逐帧去重; cap35
-  C  场所15:    现形态 + 场所去重 (旧帧位置<=15m 同场所, 留最早t_now); cap35
-  D  hold+15:   hold-c + 场所15 (留最早)
-  E  hold+15s:  hold-c + 场所15 (留|c|最大)
-  F  15s:       现形态 + 场所15 (留|c|最大)
-
-口径: MATLAB 1-based 帧号; 旧帧地图位置 = fusion_pose 行 t_old (EKF-odo 系)。
-校验: raw=final-L_old 的 ATE 应≈EKF 基线 (raw 即内部 EKF-odo 轨迹)。
-用法: python afix_prototype.py
-"""
 import numpy as np
 import pandas as pd
 import scipy.io as sio
@@ -54,10 +34,6 @@ def sim3_full(est, gt):
 
 def field_from_events(n, evs, pos, emb=None, hold=False, place_r=0.0, cap=CAP,
                       keep='first', pass_gap=0, prad=0.0, smin=0.0):
-    """evs: [t_now, t_old, c] 1-based。pos: fusion_pose (0-based 行)。emb: 嵌入。
-    管线: 相似度门 (smin>0, 重算 emb 点积 >= smin) → 半径门 (prad>0)
-    → 逐帧旧帧去重 → 场所去重 (place_r>0) → 通过级去重 (pass_gap>0) → 注入 (形态 + cap)。"""
-    # ---- 相似度门 (τ 收紧): 用嵌入重算事件相似度 ----
     gated = []
     for t_now, t_old, c in evs:
         if smin > 0 and emb is not None and 1 <= t_old <= n and t_old < t_now:
@@ -66,7 +42,6 @@ def field_from_events(n, evs, pos, emb=None, hold=False, place_r=0.0, cap=CAP,
                 continue
         gated.append((t_now, t_old, c))
     evs = gated
-    # ---- 半径门 (PR_LOOP_RADIUS): 当前帧 vs 旧帧 地图距离 ----
     if prad > 0:
         gated2 = []
         for t_now, t_old, c in evs:
@@ -76,7 +51,6 @@ def field_from_events(n, evs, pos, emb=None, hold=False, place_r=0.0, cap=CAP,
                     continue
             gated2.append((t_now, t_old, c))
         evs = gated2
-    # ---- 逐帧旧帧去重 (同一旧帧只留首个事件, 同 MATLAB 定解) ----
     seen_old = set()
     kept = []
     for t_now, t_old, c in evs:
@@ -84,7 +58,6 @@ def field_from_events(n, evs, pos, emb=None, hold=False, place_r=0.0, cap=CAP,
             continue
         seen_old.add(t_old)
         kept.append((t_now, t_old, c))
-    # ---- 场所级去重 ----
     if place_r > 0:
         clusters, passthru = [], []
         for t_now, t_old, c in kept:
@@ -108,7 +81,6 @@ def field_from_events(n, evs, pos, emb=None, hold=False, place_r=0.0, cap=CAP,
             else:
                 best = min(cl, key=lambda e: e[0])
             kept.append(best)
-    # ---- 通过级去重: 同一次重访通过里的多个闭环测量同一残差, 只留一个 ----
     if pass_gap > 0:
         kept = sorted(kept, key=lambda e: e[0])
         clusters = []
@@ -125,7 +97,6 @@ def field_from_events(n, evs, pos, emb=None, hold=False, place_r=0.0, cap=CAP,
                 best = cl[0]
             new_kept.append(best)
         kept = new_kept
-    # ---- 注入 (形态 + cap) ----
     L = np.zeros((n, 3))
     seen_old2 = set()
     for t_now, t_old, c in kept:
@@ -142,7 +113,6 @@ def field_from_events(n, evs, pos, emb=None, hold=False, place_r=0.0, cap=CAP,
         L[a:b] += F[:, None] * c
         if hold and b < n:
             L[b:] += c
-    # ---- 上限 ----
     norm = np.linalg.norm(L, axis=1)
     over = norm > cap
     L[over] *= (cap / norm[over])[:, None]

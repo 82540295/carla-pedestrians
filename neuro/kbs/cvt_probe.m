@@ -1,4 +1,3 @@
-% cvt_probe.m — CV Toolbox 关键函数可用性实测
 ok_orb = 0; ok_f = 0; ok_e = 0; ok_decomp = 0; ok_homo = 0; ok_spm = 0;
 try
     det = orb('FeaturesPerImage', 300);

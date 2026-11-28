@@ -1,9 +1,3 @@
-% kb_s2_winsweep_v2.m — Turnaround (10-09 代, 10 事件) S2 拟合窗扫参
-% 复用 MATLAB 内置 procrustes (与 core nlm_sim3_reanchor 同调用同约定),
-% 逐行复刻 A-fix 爬坡注入 + 非链式 S2, 保证与落盘 a_final 同口径.
-% 自校准: win=400 必须复现 a_final 的 anchored100=113.11 / scaleLocked2D=58.65,
-% 否则整表作废 (FAIL 退出).
-% 运行: matlab -batch "cd('../kbs'); kb_s2_winsweep_v2"
 clear all;
 BASE = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';
 gt     = csvread(fullfile(BASE, 'a_final', 'ground_truth_backup.txt'));
@@ -18,10 +12,8 @@ disp(sprintf('n=%d  events=%d  gap[min,max]=[%d,%d]  residMax=%.2fm', ...
     n, size(ev,1), min(ev(:,1)-ev(:,2)), max(ev(:,1)-ev(:,2)), ...
     max(sqrt(sum(ev(:,3:5).^2,2)))));
 
-% S2 输入 = preS2 落盘轨迹 (core L675 保存, 已含 A-fix 爬坡, 勿重复注入)
 base = pres2;
 
-% ---------- 非链式 S2 (逐行复刻 nlm_sim3_reanchor L985-1030) ----------
 d0  = sqrt(sum((base - base(1,:)).^2, 2));
 sra = find(d0 > 1, 1, 'first');
 if isempty(sra), sra = 1; end
@@ -29,7 +21,6 @@ evs = sortrows(ev, 1);
 
 wins = [100 150 200 250 300 350 400 450 500 600 700 800 1000 1200];
 printf = @() 0; % no-op
-% 表头
 disp(sprintf('  %6s %10s %12s %10s  %s', 'win', 'anch100', 'scale2D', 's2_app', 'verdict'));
 best_w = 400; best_anch = inf;
 ok_calib = false;
@@ -77,8 +68,6 @@ end
 disp(sprintf('自校准 OK (win=400 与 a_final 逐帧一致)'));
 disp(sprintf('best win = %d   anchored100 = %.2f m (基准400窗值见上表)', best_w, best_anch));
 
-% ---------- 辅助口径 ----------
-% 与 compute_metrics_with_alignment.m 逐式一致 (前100帧 Procrustes, 全轨迹检验)
 function r = metric_anch100(E, G)
 n = min(size(E,1), size(G,1)); E = E(1:n,:); G = G(1:n,:);
 af = min(100, n);
@@ -88,7 +77,6 @@ err = sqrt(sum((Ea - G).^2, 2));
 r = sqrt(mean(err.^2));
 end
 
-% 与 compute_final_metrics.py scale_locked_2d 逐式一致 (起点+总长匹配, 无旋转, 2D)
 function r = metric_scale2d(E, G)
 n = min(size(E,1), size(G,1)); E = E(1:n,:); G = G(1:n,:);
 e = E - E(1,:); g = G - G(1,:);

@@ -1,6 +1,3 @@
-% verify_table1.m — 锁定论文 Table 1 的5个室外集 Sim(3) 数字(仓库口径)
-% 打印: 各文件行数 / compute_metrics_with_alignment(NLM,EKF,VO) 的 RMSE+终点误差+漂移 /
-%       函数内部 Procrustes 尺度 / MATLAB内手动Umeyama(用于对照Python)
 clear all; close all; clc;
 addpath('../07_test/test_imu_visual_slam/ablation');
 base = '../data/01_NeuroSLAM_Datasets';
@@ -20,7 +17,6 @@ for k = 1:numel(sets)
     [rv,fev,dv] = compute_metrics_with_alignment(vo,  gt, L);
     fprintf('  func(NLM,EKF,VO)=%.2f(t=%.2f,%.2f%%) | %.2f(%.2f%%) | %.2f(%.2f%%)\n', ...
         rn,fen,dn, re,de, rv,dv);
-    % 手动 Umeyama 全轨迹 Sim(3) 对照
     [sN,rn2] = umeyama_rmse(nlm, gt);
     [sE,re2] = umeyama_rmse(ekf, gt);
     fprintf('  manualUmeyama: NLM=%.2f(s=%.3f) EKF=%.2f(s=%.3f)\n', rn2, sN, re2, sE);
@@ -42,4 +38,3 @@ function [s, rmse] = umeyama_rmse(src, dst)
     e = sqrt(sum((al - dst).^2, 2));
     rmse = sqrt(mean(e.^2));
 end
-% (手动Umeyama对照部分省略——仓库口径以 compute_metrics_with_alignment 为准)

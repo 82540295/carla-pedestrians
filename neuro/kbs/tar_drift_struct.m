@@ -1,5 +1,3 @@
-% tar_drift_struct.m — 拆解 Turnaround 各轨迹的"系统性"误差成分: 尺度/旋转/平移
-% 目的: 搞清 version A(745m) 与 version B(28.7m) 的 26x 差距到底是什么
 clear all; close all; clc;
 tar = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';
 gt   = csvread(fullfile(tar,'a_final','ground_truth_backup.txt'));
@@ -21,12 +19,10 @@ fprintf('\n=== version B 全局Procrustes 拟合的 (尺度, 旋转角, 平移) 
 for k = 1:size(cfgs,1)
     tr = cfgs{k,2}; n=min(size(tr,1),size(gt,1)); tr=tr(1:n,:); g=gt(1:n,:);
     [M,A,T] = procrustes(g, tr, 'Scaling', true);
-    % T: 结构体, T.b=scale, T.R=旋转矩阵, T.c=平移向量(在原始坐标系)
     rotang = acosd((trace(T.R)-1)/2); if rotang>180, rotang=360-rotang; end
     fprintf('  %-8s scale=%.4f  旋转=%6.2f deg  |平移|=%7.2f m\n', cfgs{k,1}, T.b, rotang, norm(T.c));
 end
 
-% 首100帧的尺度 vs 全程尺度 → 看是否存在"尺度漂移"
 fprintf('\n=== 尺度漂移: 首100帧拟合尺度 vs 全程拟合尺度 ===\n');
 for k = 1:size(cfgs,1)
     tr = cfgs{k,2}; n=min(size(tr,1),size(gt,1)); tr=tr(1:n,:); g=gt(1:n,:);

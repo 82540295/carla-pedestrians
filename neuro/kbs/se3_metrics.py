@@ -1,30 +1,13 @@
 #!/usr/bin/env python3
-"""kbs/se3_metrics.py — SE(3) 刚性 ATE 全矩阵 (2026-10-15, 论文度量主张口径)
-
-目的:
-  1) SE(3) 刚性 ATE (旋转+平移对齐, 不重拟合全局尺度) — "无 RTK 度量 SLAM" 主张的诚实口径;
-     sim3_full 会把全局尺度重新拟合掉, 尺度校正的全局分量在其中不可见。
-  2) 同口径输出 sim3_full, 与 final_metrics.json 规范数字交叉校验 (必须逐位一致)。
-  3) 输出 sim3_full 拟合的全局尺度因子 s — 量化 "评测吸收了多大全局尺度误差"。
-配置 (每集, 存在即算):
-  VO / EKF / EKF+scale (fp_head030, P2 尺度头 replay db=0.30, 无闭环) /
-  NLM-loopline (slam_results, τ0.94 规范) / NLM-fullsystem (slam_results_scale_nlm) /
-  ORB-only (slam_results_orbonly, 消融)
-输出: neuro/kbs/se3_metrics.json + 打印摘要
-"""
 import numpy as np, pandas as pd, scipy.io as sio, json, os, sys
 
-# 锚定到脚本所在目录: 本脚本含 ../ 相对路径, 需保证从任意 cwd 调用均正确
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# 数据根可覆盖: NLM_DATA_ROOT=/path/01_NeuroSLAM_Datasets (默认 ../data/01_NeuroSLAM_Datasets)
 D  = os.environ.get('NLM_DATA_ROOT', '../data/01_NeuroSLAM_Datasets').rstrip('/') + '/'
 if not os.path.isdir(D):
     print(f'[ERROR] data root not found: {os.path.abspath(D)}\n'
           f'        set NLM_DATA_ROOT=<bundle>/datasets (or a full run tree) and retry')
     sys.exit(2)
-# _meta 里记录可移植的记号: 设了环境变量就写 $NLM_DATA_ROOT/, 否则写默认相对路径。
-# (曾经写死实际绝对路径, 会把作者本机的 workspace 路径提交进仓库)
 ROOT_NOTE = '$NLM_DATA_ROOT/' if 'NLM_DATA_ROOT' in os.environ else D
 BK = os.environ.get('NLM_BACKUP_ROOT', '../data/_p11_backup_20261014').rstrip('/') + '/'
 SETS = ['Town05Data_IMU_Fusion', 'Town03Data_IMU_Fusion', 'Town07Data_IMU_Fusion',
@@ -33,7 +16,6 @@ SHORT = {'Town05Data_IMU_Fusion': 'Town05', 'Town03Data_IMU_Fusion': 'Town03',
          'Town07Data_IMU_Fusion': 'Town07', 'Town10HDData_IMU_Fusion': 'Town10HD'}
 
 def se3_rigid(est, gt):
-    """SE(3) 刚性对齐 (Kabsch, 无尺度)。返回 (rmse, drift%)。"""
     n = min(len(est), len(gt)); est, gt = est[:n], gt[:n]
     ec, gc = est - est.mean(0), gt - gt.mean(0)
     U, S, Vt = np.linalg.svd(gc.T @ ec)
@@ -45,7 +27,6 @@ def se3_rigid(est, gt):
     return float(np.sqrt((err ** 2).mean())), float(err[-1] / L * 100)
 
 def sim3_full(est, gt):
-    """full Sim(3) 对齐 (旋转+全局尺度+平移)。返回 (rmse, drift%, 拟合尺度 s)。"""
     n = min(len(est), len(gt)); est, gt = est[:n], gt[:n]
     ec, gc = est - est.mean(0), gt - gt.mean(0)
     U, S, Vt = np.linalg.svd(gc.T @ ec)
@@ -74,7 +55,6 @@ def loadmat(d, fn, var):
     except Exception:
         return None
 
-# ─────────────────── 全矩阵 ───────────────────
 OUT = {}
 for sd in SETS:
     base = D + sd + '/'
@@ -90,9 +70,9 @@ for sd in SETS:
         'NLM-fullsystem': loadmat(base, 'slam_results_scale_nlm/trajectories.mat', 'exp_trajectory'),
         'ORB-only': loadmat(base, 'slam_results_orbonly/trajectories.mat', 'exp_trajectory'),
     }
-    if cfg['VO'] is None:   # KITTI VO 在 raw 转换目录 (有头 vo_x/y/z)
+    if cfg['VO'] is None:
         cfg['VO'] = loadcsv(D + '../KITTI_07/', 'visual_odometry_ekf.txt', ['vo_x', 'vo_y', 'vo_z'])
-    if sd in SHORT:         # EKF+scale基座 (P2 尺度头 replay fp_head030, 无 NLM)
+    if sd in SHORT:
         cfg['EKF+scale'] = loadcsv(BK + SHORT[sd] + '/', 'fp_head030.txt', ['pos_x', 'pos_y', 'pos_z'])
     row = {'gt_len_m': round(float(np.linalg.norm(np.diff(gt, axis=0), axis=1).sum()), 1)}
     for name, traj in cfg.items():
@@ -105,7 +85,6 @@ for sd in SETS:
                      'sim3_fitted_scale': round(s_f, 4)}
     OUT[sd] = row
 
-# ── 缺失产物的列: 从上一版 JSON 结转, 并打 carried=True 标记 (不静默丢行/丢集) ──
 PREV = {}
 JSN = '../kbs/se3_metrics.json'
 if os.path.exists(JSN):
@@ -116,7 +95,7 @@ if os.path.exists(JSN):
 SNAP = {k: v for k, v in PREV.items() if not k.startswith('_')}
 for sd, prow in SNAP.items():
     row = OUT.get(sd)
-    if row is None:                      # 整集没有数据 (如 KITTI09): 整行结转
+    if row is None:
         carried = {k: (dict(v, carried=True) if isinstance(v, dict) else v)
                    for k, v in prow.items() if k != 'gt_len_m'}
         OUT[sd] = {'gt_len_m': prow.get('gt_len_m'), **carried, 'carried_row': True}
@@ -124,7 +103,7 @@ for sd, prow in SNAP.items():
     for cfg, v in prow.items():
         if cfg == 'gt_len_m' or not isinstance(v, dict):
             continue
-        if cfg not in row:               # 该配置的产物不在数据根里
+        if cfg not in row:
             row[cfg] = dict(v, carried=True)
 
 OUT['_meta'] = {
@@ -162,7 +141,6 @@ OUT['_meta']['table3_notes'] = [
     'unless export_repro_bundle.py has been run over the original run tree.',
 ]
 
-# 有几格是本次真算的? 全是 carried/空集时不得写文件、不得 PASS
 N_COMPUTED = sum(1 for sd, row in OUT.items() if not sd.startswith('_')
                  for k, v in row.items()
                  if k not in ('gt_len_m', 'carried_row') and isinstance(v, dict)
@@ -177,7 +155,6 @@ with open('../kbs/se3_metrics.json', 'w') as f:
     json.dump(OUT, f, indent=2, ensure_ascii=False)
     f.write('\n')
 
-# ─────────────────── 打印 ───────────────────
 CMPS = ['VO', 'EKF', 'EKF+scale', 'NLM-loopline', 'NLM-fullsystem', 'ORB-only']
 print('=' * 96)
 for sd, row in OUT.items():
@@ -192,7 +169,6 @@ for sd, row in OUT.items():
                   f"{m['sim3_rmse']:10.2f} {m['sim3_drift']:8.2f} {m['sim3_fitted_scale']:9.4f}")
 print('\n→ 已写入 neuro/kbs/se3_metrics.json')
 
-# ─────────────────── 规范交叉校验 (sim3_full 必须与 final_metrics 逐位一致) ───────────────────
 FM = json.load(open('../kbs/final_metrics.json'))
 t1 = FM['table1']
 print('\n── 与 final_metrics.json 交叉校验 (sim3_full 应一致) ──')
@@ -200,7 +176,7 @@ ok = True
 NCMP = 0
 for sd, row in OUT.items():
     if sd.startswith('_') or sd not in t1:
-        continue  # 补充材料数据集 (如 KITTI09) 不在主表, 跳过交叉
+        continue
     for name, key in [('NLM-loopline', 'nlm'), ('EKF', 'ekf'), ('VO', 'vo')]:
         ref = t1[sd].get(key)
         if name in row and ref and not row[name].get('carried'):

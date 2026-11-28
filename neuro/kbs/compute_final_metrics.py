@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
-"""kbs/compute_final_metrics.py — 论文定稿指标全量计算 (数据集换 Town05/03/07/10HD 后, 2026-10-12)
-
-产出:
-  Table 3 五行 (CARLA 4: Town05/03/07/10HD + KITTI07 现实验证): NLM/EKF/VO 的
-  full-Sim(3) RMSE + drift rate + 模板/节点/闭环计数 (experiences.mat)
-输出: neuro/kbs/final_metrics.json + 打印摘要
-注: 闭环计数口径 = 每 experience 首条 link (论文沿用此口径)
-"""
 import numpy as np, pandas as pd, scipy.io as sio, json, os, sys
 
-# 锚定到脚本所在目录: 本脚本含 ../ 相对路径, 需保证从任意 cwd 调用均正确
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# 数据根可覆盖 (与 se3_metrics.py / check_datasets.py 同一约定):
 # NLM_DATA_ROOT=/path/to/datasets python3 compute_final_metrics.py
 D = os.environ.get('NLM_DATA_ROOT', '../data/01_NeuroSLAM_Datasets').rstrip('/') + '/'
 if not os.path.isdir(D):
@@ -45,7 +35,6 @@ def loadcsv(d, fn, cols):
     c = [x for x in cols if x in a.columns]
     return a[c].values if len(c) == 3 else None
 
-# ─────────────────── 1) Table 3 五行 ───────────────────
 t1 = {}
 for d in ['Town05Data_IMU_Fusion', 'Town03Data_IMU_Fusion', 'Town07Data_IMU_Fusion',
           'Town10HDData_IMU_Fusion', 'KITTI07Data_IMU_Fusion']:
@@ -54,7 +43,7 @@ for d in ['Town05Data_IMU_Fusion', 'Town03Data_IMU_Fusion', 'Town07Data_IMU_Fusi
     nlm = loadmat(d, 'exp_trajectory')
     fu = loadcsv(d, 'fusion_pose.txt', ['pos_x', 'pos_y', 'pos_z'])
     vo = loadcsv(d, 'visual_odometry.txt', ['vo_x', 'vo_y', 'vo_z'])
-    if vo is None:   # KITTI07: VO 文件在 raw 转换目录 neuro/data/KITTI_07 (有头 vo_x/y/z)
+    if vo is None:
         pv = D.rstrip('/') + '/../KITTI_07/visual_odometry_ekf.txt'
         if os.path.exists(pv):
             a2 = pd.read_csv(pv)
@@ -71,12 +60,11 @@ for d in ['Town05Data_IMU_Fusion', 'Town03Data_IMU_Fusion', 'Town07Data_IMU_Fusi
         r, dr = sim3_full(vo, gt); row['vo'] = {'rmse': round(r, 2), 'drift': round(dr, 2)}
     else:
         row['vo'] = None
-    # 模板/节点/闭环计数
     p = D + base + 'slam_results/experiences.mat'
     if os.path.exists(p):
         m = sio.loadmat(p)
         NUM = int(float(m['NUM_EXPS'].ravel()[0]))
-        EXP = m['EXPERIENCES']  # (1, N) object-cell 数组, 每 cell 一个 struct
+        EXP = m['EXPERIENCES']
         nvt = 0; nloop = 0
         n_exp = EXP.shape[1] if EXP.ndim == 2 else EXP.shape[0]
         for k in range(n_exp):
@@ -115,7 +103,6 @@ META = {
 with open('../kbs/final_metrics.json', 'w') as f:
     json.dump({'_meta': META, **OUT}, f, indent=2, ensure_ascii=False)
 
-# ─────────────────── 打印 ───────────────────
 print('════ Table 1 (full Sim(3), Town05/03/07/10HD + KITTI07) ════')
 print(f"{'set':24s} {'NLM':>7s} {'EKF':>7s} {'VO':>7s} | {'drift NLM/EKF':>14s} | nodes/tpl/loop | GTlen")
 for d, r in t1.items():

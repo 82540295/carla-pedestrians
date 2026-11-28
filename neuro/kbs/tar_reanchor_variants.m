@@ -1,8 +1,3 @@
-% tar_reanchor_variants.m — 16真实事件 全Sim(3)重锚: 3种DOF/稳健性变体 + per-lap oracle 防伪判据
-% V1 裸Sim(3): 用拟合的 b,R,t
-% V2 钳位尺度: b 钳到 [0.5,2]x 上一事件b (running先验, 防窗口退化尺度翻), t 用质心约束重算
-% V3 SE(3): 只用 R,t, 强制 b=1 (检验尺度是否主导校正)
-% 判据: 版本A + simple 是否稳定 < EKF(745); 各变体 per-lap oracle 是否保持 ≈ 基线(无局部畸变注入)
 clear all; close all; clc;
 addpath('../07_test/07_test/test_imu_visual_slam/ablation');
 tar = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';
@@ -20,7 +15,6 @@ aWin = adisk(sra : min(sra+win-1, n), :);
 evs = sortrows(NLM_LOOP_EVENTS, 1);
 fprintf('n=%d 事件=%d 锚点窗=[%d:%d] win=%d\n', n, size(evs,1), sra, min(sra+win-1,n), win);
 
-% 预计算段区间 (与 core 实现一致: 下一事件前的帧)
 segA = zeros(size(evs,1),1); segB = zeros(size(evs,1),1);
 for k = 1:size(evs,1)
     t_now = evs(k,1);
@@ -65,7 +59,7 @@ function corr = run_variant(evs, segA, segB, adisk, aWin, win, mode)
         cWin = adisk(max(evs(k,1)-win+1,1) : min(evs(k,1), segB(k)), :);
         if numel(cWin) < 30 || segB(k) < segA(k), continue; end
         [~, ~, T] = procrustes(aWin, cWin, 'Scaling', true);
-        Rmat = T.T;                 % 3x3, 行向量右乘: anchor ≈ b*(cur*Rmat)+t
+        Rmat = T.T;
         b = T.b;
         if strcmp(mode,'V2')
             lo = 0.5*prev_b; hi = 2.0*prev_b;
@@ -75,7 +69,7 @@ function corr = run_variant(evs, segA, segB, adisk, aWin, win, mode)
             b = 1.0;
         end
         cc = mean(cWin,1);
-        tvec = ca - b*(cc*Rmat);    % 质心约束: 保持窗口质心映射一致(对钳位稳健)
+        tvec = ca - b*(cc*Rmat);
         seg = segA(k):segB(k);
         corr(seg,:) = b*(adisk(seg,:)*Rmat) + tvec;
     end

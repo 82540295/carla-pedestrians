@@ -17,11 +17,11 @@ def run(dset, sub):
     r,dr=sim3_full(nlm,gt)
     print(f"  {dset:26s} {sub:28s}  RMSE={r:8.2f}m  drift={dr:5.2f}%  (n={len(nlm)})")
 pairs=[
- ('Town05Data_IMU_Fusion','slam_results'),          # 基线
+ ('Town05Data_IMU_Fusion','slam_results'),
  ('Town05Data_IMU_Fusion','slam_results_pr2_smoke'),# A-fix+S2
- ('Town05Data_IMU_Fusion','slam_results_pr3_smoke'),# 仅A-fix
+ ('Town05Data_IMU_Fusion','slam_results_pr3_smoke'),
  ('KITTI07Data_IMU_Fusion','slam_results_pr_kitti'),# A-fix+S2
- ('KITTI07Data_IMU_Fusion','slam_results_pr_kitti_af'),# 仅A-fix
+ ('KITTI07Data_IMU_Fusion','slam_results_pr_kitti_af'),
 ]
 for d,s in pairs:
     try: run(d,s)

@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-"""pr_export_embeddings.py — DINOv2 嵌入 npy → MATLAB .mat (PR 分支用)
-
+"""
 {set}/slam_results/pr_dinov2s.npy  →  {set}/slam_results/pr_embeddings.mat
-变量名 PR_EMB, (N,384) float32; 行 i 对应第 i 帧 (与 ground_truth 行序一致)。
 """
 import os
 

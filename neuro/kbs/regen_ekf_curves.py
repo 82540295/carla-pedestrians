@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""kbs/regen_ekf_curves.py — 重绘 4 张 EKF 曲线图 (Town05/03/07/10HD, 2026-10-12 数据集换集)
-
-数据集: Town05 / Town03 / Town07 / Town10HD (全 CARLA 重采数据; MH_03/KITTI07
-曲线随 EuRoC 数据集退出论文而移除, KITTI07 改由 KITTI_07_input_output 图承担
-现实数据验证)。
-样式与旧图一致: 对齐后逐帧 3D 位置误差 vs GT 弧长, NLM红实线 / EKF蓝虚线 / VO黑点线, 图例带 ATE。
-口径: 全轨迹 7-DoF Sim(3) Umeyama 对齐 (与论文 Table 1 / compute_final_metrics.py 一致)。
-数据源 (各集同构):
-  TownNN   GT/fusion/visual_odometry (有头 CSV) + slam_results/trajectories.mat:exp_trajectory
-注: 2026-10-09 曾尝试把 CARLA #100 形态 (EKF_VIO 10维 log尺度状态 + 转弯运动学
-    尺度观测) 移植进独立 EKF 生成器, 重生成实测均有害, 已回滚 (生成器回
-    7f9bbb1 版本); CARLA 侧 10-09 恢复只动 IMU_Vision_Fusion_EKF.py。
-"""
 import numpy as np, os
 import pandas as pd
 import scipy.io as sio
@@ -22,7 +9,6 @@ plt.rcParams.update({'font.family': 'sans-serif',
                         'font.sans-serif': ['DejaVu Sans'],
                         'mathtext.fontset': 'dejavusans'})
 
-# 数据根可覆盖（与 se3_metrics.py 同约定），资产包可直接重绘
 _HERE = os.path.dirname(os.path.abspath(__file__))
 DS = os.environ.get('NLM_DATA_ROOT', os.path.join(_HERE, '..', 'data', '01_NeuroSLAM_Datasets')).rstrip('/')
 OUT = os.path.join(_HERE, 'fig') + '/'

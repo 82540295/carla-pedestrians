@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""pr_train_head.py — P2 train-once: 冻结 DINOv2 特征上的轻量头 (度量学习)
-
-设计:
-  输入   = Phase 0 预计算冻结 DINOv2-S 特征 (384d, L2 归一) —— 训练无需 DINOv2 前向。
-  模型   = head: 384 -> 384(LN+GELU) -> 128, 输出 L2 归一; 微调嵌入 = head(冻结特征)。
-  损失   = triplet (重访 anchor/正对/难负) + 难负 hinge (自相似非重访压到阈值下)。
-           直接治零样本假闭环根因: 分离 "真重访" 与 "自相似非重访"。
-  训练集 = Town05 + Town03 + Town07 (CARLA 合成, train-once); KITTI 不进训练 (零样本)。
-           正对来自 Town05(3场所)/Town03(1场所); 难负来自全部 3 集。
-  实现   = 所有嵌入按帧索引直接取 (FEAT[idx] -> head), 不做 batch 成员 searchsorted,
-           避免索引对齐 bug。head 极轻, 多次前向代价可忽略。
-用法:  pr_train_head.py [--epochs 300] [--batch 512] [--margin 0.3] [--neg-m 0.3]
-输出:  neuro/kbs/pr_head.pt  (head state_dict + 元信息)
-"""
 import os
 import argparse
 
@@ -69,7 +55,7 @@ def main():
     FEAT = torch.from_numpy(np.concatenate(embs, axis=0)).cuda()      # (Nt,384)
     off = np.concatenate([[0], np.cumsum([len(x) for x in embs[:-1]])])
     PID = np.concatenate(pids)
-    HN = np.concatenate([hn + o for hn, o in zip(hnegs, off)])        # 全局索引, -1 填充
+    HN = np.concatenate([hn + o for hn, o in zip(hnegs, off)])
 
     revisit_idx = np.where(PID >= 0)[0]
     groups = {}
@@ -89,7 +75,6 @@ def main():
 
     for ep in range(args.epochs):
         model.train()
-        # ── triplet: 每场所抽 anchor + 同场所正对 + 该 anchor 的难负 (直接索引) ──
         anchors, positives = [], []
         per = min(max(8, args.batch // max(1, len(group_keys) * 2)), args.pos_cap)
         for gk in group_keys:
@@ -114,11 +99,9 @@ def main():
         en = model(FEAT[hn])
         s_ap = (ea * ep_).sum(1)
         s_an = (ea * en).sum(1)
-        # 绝对地板: 正对 sim >= pos-floor (margin triplet 只保相对序, 正对绝对值会塌到 ~0.25)
         tri = torch.clamp(args.pos_floor - s_ap, min=0.0).mean() \
             + torch.clamp(s_an - args.neg_ceiling, min=0.0).mean()
 
-        # ── 难负 hinge: 随机帧 + 其自相似非重访 (直接索引) ──
         j = torch.from_numpy(np.random.choice(
             hasneg_idx, size=args.batch,
             replace=len(hasneg_idx) < args.batch)).cuda()

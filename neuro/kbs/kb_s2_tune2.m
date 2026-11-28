@@ -1,6 +1,3 @@
-% kb_s2_tune2.m — (A) win扫描(Turnaround matched backup pair, 非链式+行数门)
-%                (B) 开放集 S2 中性确认: on-disk a_final(S2off) → 离线S2on, before/after
-% 关键修正: 之前 win 扫描误用"旧轨迹+新事件"错配pair → 现统一用同一次run的匹配pair。
 clear all; close all; clc;
 root = '../data/01_NeuroSLAM_Datasets';
 bak  = '/tmp/turnaround_a_final_preS2_20261006';

@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-# 决定性对比: 同一目标点(167.2,59.5, z+0.1)
-#   A) try_spawn_actor 直接投放(隔离测试用的方式, 已证0撞)
-#   B) 先在随机点 try_spawn, 再 set_transform 瞬移到目标(采集器的bidir投放方式)
-# 比较两者实际落位z、是否嵌入、碰撞数。定位"采集器反复撞wall/traffic_light"
-# 到底是 set_transform 瞬移把车压进了静态墙/红绿灯, 还是其它。
 import math
 import sys
 import time
@@ -38,7 +33,7 @@ def deploy_and_check(world, bp_lib, mode, sx, sy, zlift, drive_frames=120):
             carla.Transform(carla.Location(wp0.transform.location.x,
                                            wp0.transform.location.y, target_z),
                             wp0.transform.rotation))
-    else:  # teleport: 先随机点出生再瞬移
+    else:
         spawn_pts = m.get_spawn_points()
         import random
         sp = random.choice(spawn_pts)
@@ -60,7 +55,6 @@ def deploy_and_check(world, bp_lib, mode, sx, sy, zlift, drive_frames=120):
     col = world.spawn_actor(bp_lib.find('sensor.other.collision'),
                             carla.Transform(), car)
     col.listen(on_col)
-    # 静止30帧让物理稳定, 再直行
     for f in range(30 + drive_frames):
         if f < 30:
             ctl = carla.VehicleControl(throttle=0, brake=1)

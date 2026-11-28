@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""dc_sweep.py — 分布式闭环漂移场(DC v3)离线扫参, 7-DoF Procrustes 口径(论文Table口径).
-
-方法(与 core DC v3 注入块逐行同构):
-  输出 = base + (d - C_cum)
-  C_cum[i] = Σ_{fi<=i} c_i                      重锚定阶梯
-  d[i]     = Σ_i c_i * F_i(i-fi), F_i=0.5*(1-cos(pi*t/Wi)) (t<Wi), 之后=1
-  Wi = clip(W0 + W_PER_M*|c_i|, W0, W_MAX)      自适应松弛时程
-  Wi = min(Wi, n-fi+1)                           末端自然终止
-
-用法:
-  python3 dc_sweep.py Town01            # 单数据集扫 W0×W_PER_M
-  python3 dc_sweep.py all               # 5 数据集(需 dc_pass1 事件齐全)
-  python3 dc_sweep.py Town01 --W0 2400 --WP 30   # 单点评估(验证用)
-"""
 import sys, os
 import numpy as np, scipy.io as sio
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -35,7 +21,6 @@ def load_events(ds_dir):
 
 
 def dc_inject(base, ev, n, W0, WP, WMAX, tail=True, cmax=np.inf):
-    """cmax: 幅值门控 — |c|>cmax 的跳变不摊平(保持瞬时), 仅小跳变进漂移场."""
     f0 = np.arange(1, n + 1)
     C = np.zeros((n, 3)); d = np.zeros((n, 3))
     for fi, c in ev:
@@ -57,10 +42,6 @@ def dc_inject(base, ev, n, W0, WP, WMAX, tail=True, cmax=np.inf):
 
 
 def frame_err(caliber, gt, est):
-    """逐帧对齐后误差。caliber='simple': 起点对齐原点+路径长度缩放、无旋转
-    (报告口径 align_trajectories.m 'simple'; 项目全部基线数字同口径, 如
-    RERUN_TOWN01 EKF=74.16、10-04 CARLA EKF 基准)。'7dof': 全轨迹7-DoF
-    Procrustes (regen_table 口径, 对航向漂移宽容, 仅参照)。"""
     n = min(len(gt), len(est)); gt = gt[:n]; est = est[:n]
     if caliber == '7dof':
         e, _ = procrustes_7dof(gt, est)
@@ -109,7 +90,6 @@ def run_one(ds_dir, key, W0s, WPs, caliber='simple'):
     cms = 'inf' if best[3] == np.inf else f'{best[3]:g}'
     print(f'  BEST: W0={best[1]} WP={best[2]} Cmax={cms} ATE={best[0]:.2f} ({(best[0]-rb)/rb*100:+.2f}%) '
           f'vs EKF {re:.2f} → {"胜出" if best[0] < re else "未胜"}')
-    # 最优配置逐帧误差曲线落盘(procrustes_7dof 返回逐帧误差数组)
     out = dc_inject(base, ev, n, best[1], best[2], 4000, tail=True, cmax=best[3])
     en = frame_err(caliber, gt, out)
     ee = frame_err(caliber, gt, ekf)
@@ -129,7 +109,7 @@ if __name__ == '__main__':
     if '--caliber' in args:
         i = args.index('--caliber'); caliber = args[i+1]; args = args[:i] + args[i+2:]
     else:
-        caliber = 'simple'   # 默认报告口径(项目基线统一 simple 对齐)
+        caliber = 'simple'
     which = args[0] if args else 'all'
     if single_W0 is not None:
         W0s, WPs = [single_W0], [single_WP or 0]
