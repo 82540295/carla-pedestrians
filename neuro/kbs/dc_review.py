@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""dc_review.py — NLM DC v3 审阅材料: 5集逐帧误差对比图(base NLM / DC v3 / EKF) + 指标汇总.
-对齐口径: 7-DoF Procrustes(与论文Table/ regen_table 一致).
-输出:
-  <out>/fig_perframe_<key>.png   (逐帧误差, 2x2: 误差+末段放大+轨迹俯视)
-  <out>/summary.csv              (指标汇总)
-"""
 import numpy as np, os
 import matplotlib
 matplotlib.use('Agg')
@@ -19,7 +13,6 @@ os.makedirs(OUT, exist_ok=True)
 plt.rcParams.update({'font.size': 9, 'figure.dpi': 130})
 
 def align7(A, B, anchor=None):
-    """对齐 B 到 A(7-DoF), 返回对齐后的 B (n,3)."""
     n = min(len(A), len(B)); A, B = A[:n], B[:n]
     a = n if anchor is None else min(anchor, n)
     ga = A[:a] - A[:a].mean(0); eb = B[:a] - B[:a].mean(0)
@@ -32,7 +25,6 @@ def align7(A, B, anchor=None):
     return (s * (R @ B.T)).T + t
 
 def procr7(A, B, anchor=None):
-    """对齐 B 到 A, 返回逐帧误差(全轨迹7-DoF)."""
     n = min(len(A), len(B))
     Ba = align7(A, B, anchor)
     return np.linalg.norm(Ba - A[:n], axis=1)
@@ -58,7 +50,6 @@ for ds_dir, key in DSS:
                  round((rmse(ee) - rmse(ed)) / rmse(ee) * 100, 2),
                  round(float((ed < eb).mean()) * 100, 1)])
 
-    # ---- 2x2 图 ----
     fig, axes = plt.subplots(2, 2, figsize=(11, 7.5))
     f = np.arange(n)
     ax = axes[0, 0]
@@ -75,7 +66,6 @@ for ds_dir, key in DSS:
     ax.semilogy(f[sl], ee[sl], color='tab:blue', lw=1.0, label='EKF')
     ax.set_yscale('log'); ax.set_xlabel('frame'); ax.set_ylabel('error (m)')
     ax.set_title(f'last 20% (frames {sl.start}-{n}): where DC acts'); ax.legend(fontsize=8); ax.grid(alpha=0.3, which='both')
-    # 轨迹俯视: GT vs base vs dc
     ax = axes[1, 0]
     m = n
     ax.plot(gt[:m, 0], gt[:m, 1], 'k', lw=1.0, label='GT')
@@ -84,7 +74,6 @@ for ds_dir, key in DSS:
     ax.plot(dA[:m, 0], dA[:m, 1], color='tab:red', lw=1.2, label='NLM + DC')
     ax.set_aspect('equal'); ax.set_xlabel('x (m)'); ax.set_ylabel('y (m)')
     ax.set_title('top view (aligned)'); ax.legend(fontsize=8); ax.grid(alpha=0.3)
-    # base→dc 修正向量场(每200帧抽一个事件区放大): 画 base 与 dc 差异
     ax = axes[1, 1]
     diff = np.linalg.norm(dc - base, axis=1)[:n]
     ax.plot(f, diff, color='tab:green', lw=0.9)

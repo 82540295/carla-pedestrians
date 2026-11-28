@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""kbs/route2_dyaw_events.py — 路线2: 对 NLM 记录的全部闭环事件对测量视觉相对位姿 (dyaw)
-
-与 /tmp/closedloop_decisive.m 完全同管线: ORB + 旋转不变BRIEF + F + E=K'FK + 四解(cheirality)。
-数据源: a_final/loop_constraint_events.mat 的 [t_now, t_old] 事件对 (系统真实记录的闭环)。
-输出: 逐事件 dyaw_est vs GT_dyaw + 匹配质量(inlier数, nn1 med) + 平移方向cos。
-用途: ① 量化路线2 dyaw 测量通道在真实闭环点上的可用性 (S2 门控/权重信号的原料)
-      ② 判断 dyaw 估计是否系统性可靠 (若 10/10 事件 |d_dyaw| 小 → 可作为闭环质量门)
-"""
 import numpy as np
 import pandas as pd
 import cv2
@@ -15,7 +7,6 @@ import glob, sys
 
 BASE = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion/'
 W, H = 160, 120
-# 与 closedloop_decisive.m 一致的内参近似 (fx=W/2)
 K = np.array([[W/2, 0, W/2], [0, W/2, H/2], [0, 0, 1.0]])
 Kt = K.T
 
@@ -23,7 +14,6 @@ def wrap_pi(a):
     return (a + np.pi) % (2*np.pi) - np.pi
 
 def brief_pair(img1, img2, p1, p2, angle1, angle2, w):
-    """旋转不变 BRIEF: 固定随机偏移 (同一组种子, 与 MATLAB 探针一致)"""
     rng = np.random.RandomState(20261009)
     N = 256
     ox  = np.round((rng.rand(N)-0.5)*w).astype(int).reshape(1,-1)
@@ -40,7 +30,6 @@ def brief_pair(img1, img2, p1, p2, angle1, angle2, w):
     return one(img1, p1, angle1), one(img2, p2, angle2)
 
 def hamming_nn(D1, D2):
-    """256-bit hamming 距离矩阵 + 每行最近邻"""
     n1, n2 = D1.shape[0], D2.shape[0]
     B1 = D1.reshape(n1, 32, 8)
     B2 = D2.reshape(n2, 32, 8)
@@ -48,16 +37,12 @@ def hamming_nn(D1, D2):
     ti  = np.zeros(n1, dtype=int)
     for c in range(32):
         for b in range(8):
-            pass  # 逐位太慢; 改用 int32 打包
-    # 打包成 8 个 32-bit 字
+            pass
     w1 = np.zeros((n1, 8), dtype=np.uint32)
     w2 = np.zeros((n2, 8), dtype=np.uint32)
     for c in range(32):
         chunk = (D1[:, c*8:(c+1)*8] * (1 << np.arange(8)[::-1])).sum(1)
-        # 每个 8-bit 字节展开到 32-bit: 用查表
-    # 简单做法: 直接算 hamming
     lut = np.array([bin(i).count('1') for i in range(256)], dtype=np.uint8)
-    # 把每行256bit分成32个字节
     d = np.zeros((n1, n2), dtype=np.uint16)
     for c in range(32):
         b1 = (D1[:, c*8:(c+1)*8] * (1 << np.arange(8)[::-1])).sum(1).astype(np.uint8)
@@ -80,7 +65,6 @@ def norm_pix(K, pts):
     return x[:2].T
 
 def linear_tri(x1, x2, R, t):
-    """由两个归一化射线 + (R,t) 求 3D 点: X0 = r1 * ss"""
     r0 = np.array([x1[0], x1[1], 1.0])
     d1 = -R.T @ t
     d2 = R.T @ np.array([x2[0], x2[1], 1.0])
@@ -127,7 +111,7 @@ def main():
     results = []
     for i in range(ev.shape[0]):
         t_now = int(ev[i, 0]); t_old = int(ev[i, 1])
-        f1, f2 = t_old, t_now  # 旧帧 → 新帧
+        f1, f2 = t_old, t_now
         g1 = cv2.imread(BASE + f'{f1:04d}.png', cv2.IMREAD_GRAYSCALE)
         g2 = cv2.imread(BASE + f'{f2:04d}.png', cv2.IMREAD_GRAYSCALE)
         d1 = g1.astype(np.float32); d2 = g2.astype(np.float32)
@@ -167,7 +151,6 @@ def main():
         x2 = norm_pix(K, L2m[inl])
         R, t, n_cheir = four_solvers(E, x1, x2)
 
-        # GT: 帧 f1 → f2 的相对旋转 (绕 z 轴, CARLA 约定 yaw 顺时针正)
         dyaw_gt = wrap_pi(yaw[f2-1] - yaw[f1-1])
         ntr = float(np.linalg.norm(pos[f2-1] - pos[f1-1]))
         if R is None:
@@ -179,9 +162,8 @@ def main():
             continue
         dyaw_est = wrap_pi(np.arctan2(R[1, 0], R[0, 0]))
         d_dyaw = abs(wrap_pi(dyaw_est - dyaw_gt))
-        # 平移方向 (GT)
         pa = pos[f1-1]; pb = pos[f2-1]
-        tr = pa - pb  # 世界系: p1 = R*p2 + t_world 中 t 的方向
+        tr = pa - pb
         ntr = np.linalg.norm(tr)
         t_dir_gt = tr / ntr if ntr > 1e-6 else np.array([1,0,0])
         cos_t = float(np.dot(t/np.linalg.norm(t), t_dir_gt)) if R is not None else float('nan')

@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""pr_mine_loops.py — P2 train-once: GT 闭环标签挖掘
-
-对每集产出:
-  place_id[i]: 帧 i 的场所标签。重访图 (d<10m 且 arcΔ>50m) 的连通分量 = 一个
-               "重访场所" (共享 label); 不在任何重访分量中的帧 = -1 (无场所标签)。
-  hard_neg[i]: 帧 i 的 top-k 难负对索引 (零样本 DINOv2 余弦最高, 但 arcΔ∈[50,1500]m
-               且 GT d>10m) —— 自相似非重访, 正是零样本假闭环的来源。
-  统计: 重访帧数 / 场所数 / 正对数 / 难负对数。
-输出: {set}/slam_results/pr_loop_labels.npz  (place_id, hard_neg [-1 填充])
-用法: pr_mine_loops.py [set_name ...]
-"""
 import os
 import sys
 
@@ -19,10 +8,10 @@ D = '../data/01_NeuroSLAM_Datasets'
 SETS = ['Town05Data_IMU_Fusion', 'Town03Data_IMU_Fusion', 'Town07Data_IMU_Fusion',
         'Town10HDData_IMU_Fusion', 'KITTI07Data_IMU_Fusion']
 
-R_M = 10.0        # 场所半径 (与 MATLAB 距离门同值)
-ARC_MIN = 50.0    # 最小弧长间隔 (同 oracle 口径)
-ARC_MAX_NEG = 1500.0  # 难负对弧长上限 (防远期帧混入)
-K_NEG = 4         # 每帧难负对数
+R_M = 10.0
+ARC_MIN = 50.0
+ARC_MAX_NEG = 1500.0
+K_NEG = 4
 
 
 def load_gt(sub):
@@ -38,7 +27,6 @@ def mine(sub, k_neg=K_NEG):
     N = len(p)
     emb = np.load(os.path.join(sub, 'slam_results', 'pr_dinov2s.npy')).astype(np.float32)
 
-    # ── 重访图: 分块算 d<R 且 arcΔ>ARC_MIN 的边 ──
     parent = list(range(N))
 
     def find(x):
@@ -56,7 +44,6 @@ def mine(sub, k_neg=K_NEG):
     n_edges = 0
     for s in range(0, N, BLK):
         ii = np.arange(s, min(s + BLK, N))
-        # j 只需在弧长 [arc[i]-3000, arc[i]-ARC_MIN] 范围内找 (d<R 必在近弧段内)
         for j0 in range(0, s, BLK):
             jj = np.arange(j0, min(j0 + BLK, s))
             d = np.linalg.norm(p[ii, None, :] - p[None, jj, :], axis=2)
@@ -66,7 +53,6 @@ def mine(sub, k_neg=K_NEG):
                 union(int(ii[r]), int(jj[c]))
                 n_edges += 1
 
-    # 场所标签: 含 >=2 帧的重访分量才赋予共享 label
     groups = {}
     for i in range(N):
         groups.setdefault(find(i), []).append(i)
@@ -80,8 +66,7 @@ def mine(sub, k_neg=K_NEG):
             n_pos_pairs += len(g) * (len(g) - 1) // 2
             lab += 1
 
-    # ── 难负对: 每帧 top-k 零样本余弦 (弧窗 [ARC_MIN, ARC_MAX_NEG], d>R) ──
-    S = emb @ emb.T  # 已 L2 归一
+    S = emb @ emb.T
     hard_neg = np.full((N, k_neg), -1, dtype=np.int32)
     for i in range(N):
         lo = np.searchsorted(arc, arc[i] - ARC_MAX_NEG, side='right')

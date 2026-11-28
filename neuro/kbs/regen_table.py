@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
-"""regen_table.py — 用论文口径(7-DoF Procrustes: 旋转+平移+均匀尺度)为全部新轨迹重算 Table 1。
-口径来源: neuro/07_test/.../ablation/compute_metrics_with_alignment.m
+"""
   [_, est_a, T] = procrustes(gt, est, 'Scaling', true);  est_a = T.b*est + T.c
-先做口径验证: 用 10-03 备份的 Town01 NLM 轨迹, 复现论文的 16.63m。
-  - 若"全轨迹7-DoF"≈16.63 → 论文用全轨迹 (代码 align_frames=min_len, 现行)
-  - 若"前100帧7-DoF"≈16.63 → 论文用首段锚定 (论文正文 line70 的说法)
 """
 import numpy as np, os, os
 
@@ -12,7 +8,6 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.environ.get('NLM_DATA_ROOT', os.path.join(_HERE, '..', 'data', '01_NeuroSLAM_Datasets')).rstrip('/')
 
 def load_pos(path, poscols=None):
-    """poscols=None: 自动探测(首行是表头→列1,2,3; 否则列0,1,2)。"""
     with open(path) as f:
         first = f.readline().strip()
     try:
@@ -25,7 +20,6 @@ def load_pos(path, poscols=None):
     return a[:, list(cols)]
 
 def procrustes_7dof(gt, est, anchor=None):
-    """返回对齐后 est (映射到 gt 坐标系) 的逐帧误差数组。anchor=None 全轨迹, 否则前 anchor 帧。"""
     n = min(len(gt), len(est)); gt = gt[:n]; est = est[:n]
     a = n if anchor is None else min(anchor, n)
     gs = gt[:a] - gt[:a].mean(0); es = est[:a] - est[:a].mean(0)
@@ -44,7 +38,6 @@ def metrics(gt, est, anchor=None):
     term = float(d[-1])
     return rmse, term, s
 
-# ---------- 口径验证: 复现论文 Town01 NLM = 16.63 ----------
 gt01 = load_pos(f'{ROOT}/Town01Data_IMU_Fusion/ground_truth.txt')
 ekf01 = load_pos(f'{ROOT}/Town01Data_IMU_Fusion/fusion_pose.txt')
 vo01 = load_pos(f'{ROOT}/Town01Data_IMU_Fusion/visual_odometry.txt')

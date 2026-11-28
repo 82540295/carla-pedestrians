@@ -1,4 +1,3 @@
-% verify_euroc.m — EuRoC MH_01/03 仓库口径(compute_metrics_with_alignment)指标
 clear all; close all; clc;
 addpath('../07_test/test_imu_visual_slam/ablation');
 for d = {'../data/02_EuRoc_Dataset/MH_01_easy', ...

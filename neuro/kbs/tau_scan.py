@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""tau_scan.py — PR 分支相似度阈值 τ 细扫 (0.90-0.98, 事件级明细)
-
-背景 (2026-10-14): 重训后的 P2 头在 Town07 (PR 增益 -3.0m) / Town10HD (-1.17m)
-净负, 根因 = 假闭环事件的 A-fix 修正叠加过冲 (EKF 实际漂移小的集上)。
-本脚本逐 τ 给出事件数/TP/事件明细 (j,i,sim), 判断是否存在 per-sequence τ
-标定能消除假事件且保住真事件 (与现有 VT/CE 逐集标定同方法论)。
-
-用法: python tau_scan.py [Set ...]   (默认 Town05/Town07/Town10HD)
-"""
 import os
 import sys
 

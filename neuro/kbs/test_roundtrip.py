@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# 验证: 在 bidir 起点用【简单航点跟随】(非BehaviorAgent) 跑完整往返
-# 去程120m → 掉头 → 回程120m, 统计 fence 碰撞 / z范围 / 是否真正回到起点。
-# 若 0fence 且 z 稳定在路面 且 完成往返 → 该控制器可集成进采集器。
 import argparse
 import math
 import sys
@@ -16,10 +13,8 @@ def aslist(x):
 
 
 def build_waypoints(m, sx, sy, out_dist, step=4.0):
-    """从起点沿同 road_id 生成去程航点, 再取对向车道回程航点(逆序)。"""
     wp0 = aslist(m.get_waypoint(carla.Location(sx, sy, 0.0),
                                 project_to_road=True))[0]
-    # 去程
     out = []
     u = wp0
     out.append(u.transform.location)
@@ -32,7 +27,6 @@ def build_waypoints(m, sx, sy, out_dist, step=4.0):
     out_len = sum(out[i+1].distance(out[i]) for i in range(len(out)-1))
     if out_len < 0.6 * out_dist:
         return None, out_len
-    # 回程: 从去程终点切对向车道, 沿 next() 生成, 然后逆序(朝起点走)
     end_wp = aslist(m.get_waypoint(out[-1], project_to_road=True))[0]
     left = end_wp.get_left_lane()
     if left is None:
@@ -46,12 +40,11 @@ def build_waypoints(m, sx, sy, out_dist, step=4.0):
             break
         u = nxt[0]
         ret.append(u.transform.location)
-    ret.reverse()  # 朝起点方向
+    ret.reverse()
     return (out, ret), out_len
 
 
 def follow(world, car, wp_list, out_dest, max_frames, log_every=20):
-    """沿航点列表行驶, 返回 (fence, zs, reached_end, last_loc)"""
     fence = {'n': 0}
 
     def on_col(e):
@@ -65,7 +58,6 @@ def follow(world, car, wp_list, out_dest, max_frames, log_every=20):
     for f in range(max_frames):
         loc = car.get_transform().location
         rot = car.get_transform().rotation
-        # 找最近航点(前瞻: 选前方最近)
         best = None
         best_d = 1e9
         for wp in wp_list:
@@ -104,7 +96,7 @@ def main():
     ap.add_argument('--start', type=str, default='173.1,2.0')
     ap.add_argument('--out-dist', type=float, default=110.0)
     ap.add_argument('--z', type=float, default=0.1)
-    ap.add_argument('--frames', type=int, default=450)   # 每段最大帧
+    ap.add_argument('--frames', type=int, default=450)
     a = ap.parse_args()
 
     c = carla.Client('localhost', a.port)
@@ -119,7 +111,6 @@ def main():
     except Exception:
         pass
     m = world.get_map()
-    # 清残留
     bpm = world.get_blueprint_library()
     for act in world.get_actors():
         if act.type_id.startswith(('vehicle.', 'sensor.', 'walker.')):

@@ -1,5 +1,3 @@
-% verify_all.m — 论文 Table 1 全量核验: 7数据集 x 3方法 (仓库口径)
-% 输出: RMSE / 终点误差 / 漂移率, 并打印 vs EKF / vs VO 改进率
 clear all; close all; clc;
 addpath('../07_test/test_imu_visual_slam/ablation');
 base = '../data/01_NeuroSLAM_Datasets';
@@ -36,7 +34,6 @@ for d = {'../data/02_EuRoc_Dataset/MH_01_easy', ...
         d{1}(end-21:end), L, rn,fe,dr, re,ee,de, rv,ve,dv, ...
         (re-rn)/re*100, (rv-rn)/rv*100);
 end
-% Turnaround (若已生成) — 结果在数据集根目录 a_final/ dc_final/
 tar = fullfile(base, 'Town01Turnaround_IMU_Fusion');
 if exist(fullfile(tar, 'a_final', 'exp_trajectory.txt'), 'file')
     gt  = csvread(fullfile(tar, 'a_final', 'ground_truth_backup.txt'));

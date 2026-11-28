@@ -1,15 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""数据集完整性校验: GT 跳变 / VO 封顶 / 帧数 / 时间戳连续性 / 文件行数一致性。
-
-背景 (2026-10-14): Town05 车流数据 GT 含 13 次 ego 传送 (>5m/帧跳变,
-根因 = 采集器碰撞/停滞重置换车传送), 污染基线 RMSE 与尺度标签。
-重采验收标准: GT 跳变 = 0。本脚本对任意集做全套体检。
-
-用法:
-  python validate_dataset.py                 # 默认 5 论文集
-  python validate_dataset.py Town05 Town07   # 指定集
-"""
 import sys
 
 import numpy as np
@@ -23,8 +13,8 @@ SETS = {
     "Town10HD": f"{DATA}Town10HDData_IMU_Fusion",
     "KITTI07":  f"{DATA}01_NeuroSLAM_Datasets/KITTI07Data_IMU_Fusion",
 }
-JUMP_THR = 5.0     # m/帧: 超过即判为传送/跳变
-VO_CAP = 0.100     # m/帧: VO 记录硬封顶 (既定管线行为, 只报告不判错)
+JUMP_THR = 5.0
+VO_CAP = 0.100
 
 
 def check(name, d):
@@ -49,13 +39,12 @@ def check(name, d):
     else:
         r["vo_path"] = float("nan")
         r["vo_cap_ratio"] = float("nan")
-    # 时间戳连续性 (CARLA 20Hz)
     ts = gt["timestamp"].values.astype(float)
     if r["frames"] > 2:
         dt = np.diff(ts)
         r["ts_rate"] = float(1.0 / np.median(dt))
         r["ts_gap_max"] = float(dt.max())
-    min_frames = 1000 if name == "KITTI07" else 5000   # KITTI 单序列 1101 帧
+    min_frames = 1000 if name == "KITTI07" else 5000
     ok = r["jump_n"] == 0 and r["frames"] >= min_frames
     r["ok"] = ok
     return r

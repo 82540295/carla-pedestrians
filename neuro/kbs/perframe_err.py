@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""perframe_err.py — 逐帧误差定位: NLM(新,P1ON) vs EKF, 7-DoF 对齐后。
-找 NLM 输 EKF 的帧段, 判断是局部尖峰(可用 P1 平滑)还是持续漂移(架构性)。"""
 import numpy as np, os, sys, json
 _HERE = os.path.dirname(os.path.abspath(__file__))
 exec(open(os.path.join(_HERE, 'regen_table.py')).read()
@@ -38,8 +36,7 @@ for ds, key in datasets:
     ee = err_curve(gt, ekf)
     n = min(len(en), len(ee))
     en, ee = en[:n], ee[:n]
-    worse = en > ee                      # NLM 比 EKF 差
-    # 找连续"更差"段(长度>50帧), 按段内 NLM 均误差排序
+    worse = en > ee
     segs = []
     i = 0
     while i < n:
@@ -59,7 +56,6 @@ for ds, key in datasets:
         'NLM_max': float(en.max()), 'EKF_max': float(ee.max()),
         'worst_segs': [(int(a),int(b),round(c,2),round(d,2),round(e,2)) for a,b,c,d,e in segs[:4]],
     }
-    # 存逐帧曲线供画图
     np.savez(f'/tmp/perframe_{key}.npz', frame=np.arange(n), nlm=en, ekf=ee)
 
 for key, v in out.items():

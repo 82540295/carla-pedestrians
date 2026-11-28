@@ -1,25 +1,9 @@
 function kb_s2_se3_check(inDir)
-% §4.5 闭环基准复算: anchored100 口径 (前 100 帧拟合 Sim(3), 整条套用)
 %
-% 口径说明 (2026-11 修正):
-%   论文 §4.5 报告的 842.54 m / 55.92 m 是 **终点误差 (terminal error)**, 即
-%   锚定对齐后最后一帧的位置偏差; 早期版本的本函数只返回 RMSE
-%   (sqrt(mean(err^2))), 会打印 477.76 / 87.25, 与论文值对不上。现在两种都打印。
 %
-% 期望值 (2026-11 重采批次: Town01 折返, 10000 帧 / 500 s / 881.5 m / 36 个接受事件):
-%   exp_trajectory (A+S2, 部署) : terminal = 55.92 m    RMSE = 87.25 m    <- 论文报告值
-%   fusion_pose    (EKF 核)     : terminal = 842.54 m   RMSE = 477.76 m   <- 论文报告值
-%   preS2          (仅 A, 无 S2): terminal = 565.31 m   RMSE = 331.66 m   (论文未报告)
-%   比值 842.54 / 55.92 = 15.07  ("15x")
-%   scale2d (纯长度尺度 2D)     : 仅作诊断, 论文未报告
 %
-% 输入: export_closed_loop_inputs.py 生成的 5 个 txt (默认 /tmp/se3_*.txt)
 %   se3_gt.txt se3_pres2.txt se3_final.txt se3_ekf.txt se3_events.txt
-% 用法:
-%   kb_s2_se3_check              % 读 /tmp
-%   kb_s2_se3_check('/path/dir') % 读指定目录
 %
-% 注: reanchor_se3 变体 (SE(3) 无尺度) 论文未报告期望值, 只作诊断打印。
 
 if nargin < 1 || isempty(inDir)
     inDir = '/tmp';
@@ -79,7 +63,6 @@ function ok = report(tag, est, gt, expTerm, expRmse)
 end
 
 function [ea, T, s] = anchored_fit(est, gt, k)
-% 前 k 帧拟合 Sim(3) (Umeyama), 整套变换套用到整条轨迹
     n = min(size(est,1), size(gt,1)); est = est(1:n,:); gt = gt(1:n,:);
     e0 = est(1:k,:); g0 = gt(1:k,:);
     e0c = e0 - mean(e0,1); g0c = g0 - mean(g0,1);
@@ -92,14 +75,12 @@ function [ea, T, s] = anchored_fit(est, gt, k)
 end
 
 function rm = anchored100(est, gt)
-% anchored100 后的整条 RMSE (m) — 论文不报此量, 保留供诊断
     ea = anchored_fit(est, gt, 100);
     g  = gt(1:size(ea,1),:);
     rm = sqrt(mean(sum((ea - g).^2, 2)));
 end
 
 function te = anchored100_terminal(est, gt)
-% anchored100 后的 **终点误差** (m) — 论文 §4.5 的报告量
     ea = anchored_fit(est, gt, 100);
     g  = gt(1:size(ea,1),:);
     te = sqrt(sum((ea(end,:) - g(end,:)).^2, 2));
@@ -116,7 +97,6 @@ function rm = scale2d_rmse(est, gt)
 end
 
 function [traj, napp] = reanchor_se3(traj, events, win)
-    % nlm_sim3_reanchor 的 SE(3) 变体: 仅 'Scaling', false, 无尺度门
     n = size(traj,1); base = traj;
     d0 = sqrt(sum((base - base(1,:)).^2, 2));
     sra = find(d0 > 1, 1, 'first');

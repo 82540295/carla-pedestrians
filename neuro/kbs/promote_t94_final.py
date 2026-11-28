@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""promote_t94_final.py — τ=0.94 定解一键定稿 (2026-10-14)
-
-批量 (5 P2FT + 4 P2S) 跑完后执行:
-  1) slam_results_p2ft/ (τ0.94) 的 trajectories.mat + experiences.mat 提升为规范 slam_results/
-  2) 重算 final_metrics.json (compute_final_metrics 口径)
-  3) 尺度线 NLM ATE (slam_results_scale_nlm, τ0.94 + 深度基座) vs 新规范 NLM 对比
-前置: /tmp/p2ft94_final/batch.log 出现 ALL_DONE 且 9 个驱动 EXIT=0
-"""
 import shutil, os, json
 import numpy as np, scipy.io as sio, pandas as pd
 
@@ -49,7 +41,6 @@ for sub in SETS:
     print(f'{sub:12s} {a_ekf:6.2f} {a_nlm:9.2f} {a_sc:8.2f} {red:+8.1f}%')
     rows.append((sub, a_ekf, a_nlm, a_sc, red))
 
-# 闭环计数 (规范口径: 每 experience 首条 link, 1<=eid<=k)
 print('── 3) 闭环计数 (τ0.94 规范 experiences.mat) ──')
 for sub in SETS:
     m = sio.loadmat(f'{D}{sub}/slam_results/experiences.mat')

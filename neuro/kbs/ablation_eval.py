@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
-"""ablation_eval.py — 脑启发模块单关消融评测 (GC/HD/腹侧流)
-对 5 场景 × 3 模式(nogc/nohdc/novt)的 abl_<mode>/exp_trajectory.txt
-与 ground_truth.txt 做 Sim(3) full-refit 与 SE(3) rigid ATE, 复用 se3_metrics 口径。
-用法: python3 ablation_eval.py  (NLM_DATA_ROOT 可覆盖数据根)
-"""
 import os
 import numpy as np
 
-# 内联 se3_metrics 的两个对齐函数(该脚本导入即执行主表, 不能直接 import)
 ROOT = os.environ.get('NLM_DATA_ROOT', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', '01_NeuroSLAM_Datasets'))
 
 
 def se3_rigid(est, gt):
-    """SE(3) 刚性对齐 (Kabsch, 无尺度)。返回 (rmse, drift%)。"""
     n = min(len(est), len(gt)); est, gt = est[:n], gt[:n]
     ec, gc = est - est.mean(0), gt - gt.mean(0)
     U, S, Vt = np.linalg.svd(gc.T @ ec)
@@ -25,7 +18,6 @@ def se3_rigid(est, gt):
 
 
 def sim3_full(est, gt):
-    """full Sim(3) 对齐 (旋转+全局尺度+平移)。返回 (rmse, drift%, 拟合尺度 s)。"""
     n = min(len(est), len(gt)); est, gt = est[:n], gt[:n]
     ec, gc = est - est.mean(0), gt - gt.mean(0)
     U, S, Vt = np.linalg.svd(gc.T @ ec)
@@ -38,14 +30,12 @@ def sim3_full(est, gt):
     return float(np.sqrt((err ** 2).mean())), float(err[-1] / L * 100), float(s)
 SCEN = ['Town05', 'Town03', 'Town07', 'Town10HD', 'KITTI07']
 SHORT = {'Town05': 'Town05', 'Town03': 'Town03', 'Town07': 'Town07', 'Town10HD': 'Town10HD', 'KITTI07': 'KITTI07'}
-MODES = ['nogc', 'nohdc']   # novt(腹侧流关闭)≡NLM-loopline 行, 见 Table 4
+MODES = ['nogc', 'nohdc']
 MODE_CN = {'nogc': 'w/o 网格细胞', 'nohdc': 'w/o 头方向细胞', 'novt': 'w/o 腹侧模板流'}
-# 全系统基线: 论文 NLM-fullsystem 轨迹(slam_results_scale_nlm); 缺失时回退同批 abl_full
 BASE = {s: 'slam_results_scale_nlm' for s in SCEN}
 
 
 def loadtraj(p):
-    """优先读 trajectories.mat 的 exp_trajectory(与 se3_metrics 口径一致), 回退 txt。"""
     import scipy.io as sio
     mp = os.path.join(os.path.dirname(p), 'trajectories.mat')
     if os.path.exists(mp):
@@ -86,7 +76,6 @@ def main():
     for scen in SCEN:
         d = os.path.join(ROOT, scen + 'Data_IMU_Fusion')
         gt = loadtraj(os.path.join(d, 'ground_truth.txt'))
-        # 全系统基线行
         base_dir = os.path.join(d, BASE.get(scen, 'abl_full'))
         est = loadtraj(os.path.join(base_dir, 'exp_trajectory.txt'))
         if est is None:
@@ -97,7 +86,6 @@ def main():
             print('%-10s %-16s %10.2f %10.2f' % (SHORT[scen], 'full system', r3, r4))
         else:
             print('%-10s %-16s %10s %10s' % (SHORT[scen], 'full system', '缺', '缺'))
-        # 三个单关模式
         for mode in MODES:
             est = loadtraj(os.path.join(d, 'abl_' + mode, 'exp_trajectory.txt'))
             if est is None or gt is None:

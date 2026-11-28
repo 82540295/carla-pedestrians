@@ -1,5 +1,3 @@
-% tar_verify_town01.m — 用论文口径(版本A 首100帧Sim3) 在原Town01上复算 EKF/a_disk/dc/VO
-% 目的: 确认论文" NLM>EKF "是否真实成立, 及 a_disk(A-fix) 相对 EKF 的差距量级
 clear all; close all; clc;
 addpath('../07_test/07_test/test_imu_visual_slam/ablation');
 t01 = '../data/01_NeuroSLAM_Datasets/Town01_IMU_Fusion';
@@ -15,13 +13,11 @@ fprintf('\n=== 版本A 口径(首100帧锚定Sim3, 论文Table口径) ===\n');
 for k = 1:size(cfgs,1)
     fprintf('  %-14s ATE = %8.2f m   drift%%=%.3f\n', cfgs{k,1}, compute_metrics_with_alignment(cfgs{k,2}, gt, L));
 end
-% 路径长 & 尺度漂移
 fprintf('\n=== 路径长 / GT ===\n');
 for k = 1:size(cfgs,1)
     L2 = sum(sqrt(sum(diff(cfgs{k,2}).^2,2)));
     fprintf('  %-14s %8.1f m  /GT=%.3f\n', cfgs{k,1}, L2, L2/L);
 end
-% 首100帧尺度 vs 全程尺度(尺度漂移量化)
 fprintf('\n=== 首100帧尺度 vs 全程尺度 ===\n');
 for k = 1:size(cfgs,1)
     tr = cfgs{k,2}; n=min(size(tr,1),size(gt,1)); tr=tr(1:n,:); g=gt(1:n,:);

@@ -1,25 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""P2 尺度头: 轻量头标定 DAv2 零样本尺度 bias (train once 合成, zero-shot 真实)。
-
-背景 (P1.1 结论, 2026-10-14): DAv2 零样本 PnP 尺度 bias 场景相关
-(CARLA +62~74%, KITTI +19.8%; 逐帧 corr(log,log)=0.67-0.93), 零样本直接注入
-EKF 深度支路不稳 (Town03 -48% … Town05 +8%)。本头学习 log s_gt = f(逐帧特征)
-把 bias 标定掉, 让 EKF 深度支路一致受益。
-
-输入 (每帧 8 维): [log s_dav2, log d_med, log d_std, log d_p10, log d_p90,
-                  log(inl+1), fx/W, 1]   (d_*=DAv2 metric 深度图统计)
-目标: log s_gt (逐帧 GT 尺度, drift-aware; 噪声标签 → MSE 收敛到条件均值)
-模型: MLP 8→64→64→1, Adam lr=1e-3, wd=1e-3; 对照 OLS 线性基线 (同 8 特征)
-训练: Town03/05/07 (合成 train-once); 评估: held-out Town10HD + 零样本 KITTI07
-输出: pr_scale_head.pt + <数据目录>/depth_scale_head.txt (标定后支路输入,
-      与 depth_scale.txt 同格式, 不覆盖原文件)
-
-前置: scale_series_p1.py --with-davl2 已重跑 (npz 含 depth_stat / s_depth_inl)
-用法:
-  python pr_scale_head.py                # 训练 + 评估 + 写 5 集 depth_scale_head.txt
-  python pr_scale_head.py --no-write     # 只训练评估
-"""
 import argparse
 from pathlib import Path
 
@@ -45,8 +25,6 @@ WIN = 50
 
 
 def load_set(name):
-    """返回 (X N×8, y N, inl N, m N, n_frames) — 全长度, 无效帧 X/y 为 nan,
-    m 为有效掩码。N = 区间数 (n_frames-1)。"""
     z = np.load(NPZ_DIR / f"scale_series_{name}.npz")
     sd = np.asarray(z["s_depth"], np.float64)
     ds = np.atleast_2d(np.asarray(z["depth_stat"], np.float64))
@@ -112,13 +90,11 @@ def main():
     ytr = np.concatenate([data[s][1][data[s][3]] for s in train_sets])
     print(f"[train] {len(train_sets)} 集有效区间 {len(ytr)}")
 
-    # 特征标准化: 只用训练集 (防泄漏); test 时复用同参数
     mu = Xtr.mean(0)
     sdv = Xtr.std(0)
     sdv[sdv < 1e-8] = 1.0
     norm = lambda X: (X - mu) / sdv
 
-    # 训练/验证帧级切分 (防过拟合早停)
     rng = np.random.default_rng(0)
     perm = rng.permutation(len(ytr))
     n_val = max(200, len(ytr) // 10)
@@ -152,7 +128,6 @@ def main():
     model.eval()
     print(f"  训练完成 best_val_rmse={best**0.5:.4f}")
 
-    # 评估: 逐帧 + 窗中值残差 std (log 域); 头 vs OLS 线性基线
     print("\n  评估 (残差 std, log 域, 越小越好):")
     print(f"  {'集':10s} {'角色':9s} {'头-逐帧':>9s} {'头-窗':>7s} {'OLS-窗':>8s}  有效")
     results = {}
@@ -166,7 +141,6 @@ def main():
         yv_ = y[m]
         pw = windowed_median(pred); lw = windowed_median(y)
         mw = np.isfinite(pw) & np.isfinite(lw)
-        # OLS 线性基线 (同 8 特征, 训练集拟合)
         c, *_ = np.linalg.lstsq(np.concatenate([data[s][0][data[s][3]] for s in TRAIN]),
                                 np.concatenate([data[s][1][data[s][3]] for s in TRAIN]),
                                 rcond=None)
@@ -186,7 +160,6 @@ def main():
                 "results": results}, HEAD_PT)
     print(f"\n[done] 头保存 {HEAD_PT}")
 
-    # 写标定后 depth_scale_head.txt (与 depth_scale.txt 同格式; 帧 k↔区间 k-1→k)
     if not args.no_write:
         for name in ALL:
             X, y, inl, m, nf = data[name]

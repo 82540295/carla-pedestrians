@@ -1,26 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""kbs/run_all_checks.py — 一条命令把论文全部数字对着数据重算一遍
-
-它不做任何写入 (不覆盖 final_metrics.json / se3_metrics.json), 只把算出来的值
-和 expected_values.json 里论文印刷值逐格对比, 打 OK / FAIL(+偏差) / SKIP(缺产物)。
-
-用法:
-  python3 neuro/kbs/run_all_checks.py                      # 用 ../data/01_NeuroSLAM_Datasets
+"""
   NLM_DATA_ROOT=/path/NLM_Repro_Assets_*/datasets \
   NLM_BACKUP_ROOT=/path/_p11_backup_20261014 \
   python3 neuro/kbs/run_all_checks.py
-
   python3 neuro/kbs/run_all_checks.py --data-root <dir> --backup-root <dir> --json report.json
-
-分 A/B/C/D/F 五段 (E 段 Table 5 运行时是 MATLAB 实测, 脚本无法重算):
-  A 输入清单   —— 每个集该有的文件在不在、行数对不对
-  B Table 3    —— NLM/EKF/VO 的 Sim(3) RMSE 与 drift, 模板/节点/闭环计数, GT 长度
-  C Table 4    —— 双口径四配置 8 格/集 (缺 slam_results_scale_nlm / orbonly / fp_head030 时记 SKIP)
-  D 闭环基准   —— Town01 折返: GT 长度/帧数/事件数/terminal/ RMSE / 15x 比值
-  F Table 6    —— 外部对照表只核本方法两行 (RTE 原始/Sim3 对齐/剔 top-50, ATE)
-
-退出码: 0 = 没有 FAIL; 1 = 有 FAIL; 2 = 连 Table 3 都算不全 (缺基础输入)
 """
 import argparse
 import json
@@ -171,7 +155,6 @@ def main():
     print(f'data root   : {root}')
     print(f'backup root : {bk}\n')
 
-    # ── A 输入清单 ──
     print('── A 输入清单 ' + '─' * 62)
     per_set = {}
     for sd in SETS:
@@ -238,7 +221,6 @@ def main():
                ('EKF', s['ek'], 'ekf_sim3', 'ekf_se3', True),
                ('VO', s['vo'], 'vo_sim3', 'vo_se3', True)]
         if sd.startswith('KITTI'):
-            # KITTI 07 无尺度支路 (S.1), 论文的 Ours 格就是闭环线
             cfg[0] = ('Ours (=loop line)', s['lo'], 'ours_sim3', 'ours_se3', True)
         for nm, arr, ks, kse, present in cfg:
             if e[ks] is None and e[kse] is None:
@@ -257,7 +239,6 @@ def main():
                 cmp(f'{sd} ORB-only Sim(3)', round(r, 2), e['orb_sim3'])
                 cmp(f'{sd} ORB-only SE(3)', round(se3(s['orb'], s['gt'])[0], 2), e.get('orb_se3'))
 
-    # ── D 闭环 ──
     print('\n── D Closed-loop benchmark (Town01 turnaround) ' + '─' * 26)
     cl = exp['closed_loop']
     t1 = os.path.join(root, cl['seq'])
@@ -329,7 +310,6 @@ def main():
                                ('ate', 'ATE'), ('rte_top50', 'RTE excl. top-50')):
                 cmp(f'{nm} {lab}', v.get(field), e[field])
 
-    # ── 汇总 ──
     print('\n' + '═' * 74)
     print(f'PASS {res["ok"]}   FAIL {res["fail"]}   SKIP {res["skip"]}')
     if res['fails']:

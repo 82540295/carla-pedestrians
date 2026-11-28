@@ -1,7 +1,3 @@
-% tar_s2_tune.m — S2 参数调优 (win 扫描) + core全量输出口径核验 + 中性性结构确认
-% 输入 = S2 前的轨迹 (a_final 备份, 含 raw+DC+A-fix)
-% 1) win ∈ {200,300,400,500,600} 非链式S2: 版本A + simple + per-lap oracle
-% 2) 当前盘上 core 输出 (win=400) 的版本A 口径 + per-lap oracle (论文口径核验)
 clear all; close all; clc;
 addpath('../07_test/07_test/test_imu_visual_slam/ablation');
 tar = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';

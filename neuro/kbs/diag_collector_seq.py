@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-# 忠实复现采集器投放序列, 定位"432路点 head=(0,2)"的成因:
-#   1) 随机出生点 try_spawn (同 safe_spawn_vehicle)
-#   2) 建 agent A, set_destination(西南点 (33.4,-2.0)) 并 validate (同 init 步骤8-9)
-#   3) teleport 到 (167.2,59.5,z+0.1) + wait(同 wait_vehicle_deploy)
-#   4) 建全新 agent B, set_destination(去程 (265.2,59.5))
-# 打印 A/B 各自的 route head/tail/n/总长。若 B 的 head=(0,2) 而非(167,59),
-# 即证明"先建西南agent再teleport"污染了新planner起点引用。
 import math
 import random
 import sys
@@ -58,7 +51,7 @@ def fresh_agent(vehicle):
 
 
 def main():
-    random.seed(7)  # 复现某个随机出生点
+    random.seed(7)
     c = carla.Client('localhost', 2000)
     c.set_timeout(30.0)
     world = c.get_world()
@@ -89,7 +82,6 @@ def main():
           f'实际落位=({car.get_location().x:.1f},{car.get_location().y:.1f})',
           flush=True)
 
-    # 步骤2: 西南 agent A (同采集器 init)
     agentA = fresh_agent(car)
     sw = carla.Location(33.4, -2.0, 0.0)
     agentA.set_destination(sw)
@@ -97,7 +89,6 @@ def main():
     qinfo(agentA, 'A 西南目标(33.4,-2)')
     print(f'  此时车在=({car.get_location().x:.1f},{car.get_location().y:.1f})', flush=True)
 
-    # 步骤3: teleport + wait (同 wait_vehicle_deploy)
     wp0 = aslist(m.get_waypoint(carla.Location(167.2, 59.5, 0.0),
                                 project_to_road=True))[0]
     tf = carla.Transform(carla.Location(wp0.transform.location.x,
@@ -109,7 +100,6 @@ def main():
     print(f'--- 步骤3后(teleport+wait) 车在=({car.get_location().x:.1f},'
           f'{car.get_location().y:.1f}) ---', flush=True)
 
-    # 步骤4: 全新 agent B + 去程目标
     agentB = fresh_agent(car)
     out = carla.Location(265.2, 59.5, 0.0)
     agentB.set_destination(out)

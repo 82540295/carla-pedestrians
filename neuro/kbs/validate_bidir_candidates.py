@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# 物理可驱动性验证: 对 probe 给出的候选 bidir 起点, 逐个测试
-#   (1) try_spawn_actor(wp.transform) 是否成功(几何有效+物理不重叠)
-#   (2) 从该点朝去程目标行驶 60 帧, 记录 fence 碰撞数/平均速度/z范围
-# 只保留 可spawn 且 行驶60帧fence=0 的候选, 作为真正可采集的闭环起点。
 import argparse
 import math
 import sys
@@ -17,7 +13,6 @@ def aslist(x):
 
 
 def test_candidate(world, c, bpm, out_dist, frames):
-    """返回 (spawnable, fence, avg_speed, z_range, out_dist_actual)"""
     sx, sy = c
     m = world.get_map()
     wp0 = aslist(m.get_waypoint(carla.Location(sx, sy, 0.0),
@@ -25,7 +20,6 @@ def test_candidate(world, c, bpm, out_dist, frames):
     if not wp0:
         return (False, -1, 0.0, (0, 0), 0.0)
     wp0 = wp0[0]
-    # 去程目标(与probe/采集器同逻辑)
     out_wp = wp0
     for dstep in range(20, 400, 10):
         nxt = aslist(wp0.next(dstep))
@@ -36,7 +30,6 @@ def test_candidate(world, c, bpm, out_dist, frames):
                 wp0.transform.location) >= out_dist:
             break
     out_dest = out_wp.transform.location
-    # (1) 物理spawn
     car = world.try_spawn_actor(
         bpm.find('vehicle.lincoln.mkz_2020'), wp0.transform)
     if car is None:
@@ -50,7 +43,6 @@ def test_candidate(world, c, bpm, out_dist, frames):
     col = world.spawn_actor(bpm.find('sensor.other.collision'),
                             carla.Transform(), car)
     col.listen(on_col)
-    # (2) 行驶 frames 帧, 简单P控制朝 out_dest
     speeds = []
     zs = []
     for f in range(frames):
@@ -80,7 +72,6 @@ def main():
     ap.add_argument('--frames', type=int, default=60)
     a = ap.parse_args()
 
-    # probe 给出的 Town01 前10候选 (x, y)
     cands = [
         (173.1, 2.0), (144.1, 133.2), (322.1, 129.4), (105.6, 133.8),
         (128.9, 133.2), (220.1, 133.2), (248.4, 129.7), (396.0, 191.1),
@@ -90,7 +81,6 @@ def main():
     c = carla.Client('localhost', a.port)
     c.set_timeout(30.0)
     world = c.get_world()
-    # 恢复异步(之前异常退出可能冻结世界)
     try:
         s0 = world.get_settings()
         if s0.synchronous_mode:
@@ -100,7 +90,6 @@ def main():
     except Exception:
         pass
     bpm = world.get_blueprint_library()
-    # 清残留
     for act in world.get_actors():
         if act.type_id.startswith(('vehicle.', 'sensor.', 'walker.')) \
                 or 'trafficmanager' in act.type_id:

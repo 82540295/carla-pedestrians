@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""pr_oracle_revisit.py — oracle 回访上限 (DL-NLM Phase 0)
-
-定义: 对帧 i, 若存在 j ∈ [i-max_lb, i-gap) 使 dist3d(p_j, p_i) < R, 记为一次真回访。
-回答: 各集路线在 GT 层面到底有没有重访 (matcher 无关的上限), 以及重访发生在哪些区段。
-"""
 import os
 import numpy as np
 
@@ -36,7 +31,6 @@ for name in SETS:
         cnt[(250, 5)] += int((d250 < 5.0).sum())
         if (d < 5.0).any():
             hit_frames.append(i)
-    # 重访区段 (连续帧合并, 弧长表示)
     segs = []
     for i in hit_frames:
         if segs and i - segs[-1][1] <= 5:

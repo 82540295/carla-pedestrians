@@ -1,7 +1,3 @@
-% tar_simple_eval.m — 新A-fix(全局Sim3重锚) 在【两种论文口径】下完整验证
-%   口径1: 'simple' (平移+全局长度匹配, 无旋转) — 与 core test_imu_visual_fusion_slam.m 一致
-%   口径2: 版本A 首100帧Sim(3)锚定 — ablation Table口径
-% 数据: Turnaround (4 lap 闭环)
 clear all; close all; clc;
 addpath('../07_test/07_test/test_imu_visual_slam/ablation');
 tar = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';
@@ -13,7 +9,6 @@ L = sum(sqrt(sum(diff(gt).^2,2)));
 bounds = [59;2386;4714;7037;9365];
 win = 400;
 
-% --- 构造新A-fix轨迹: 每闭环把后续段重锚到首锚窗口 (全局Sim3) ---
 anchorWin = adisk(bounds(1)+1 : bounds(1)+win, :);
 corr = adisk;
 for i = 2:numel(bounds)
@@ -33,7 +28,6 @@ for k = 1:size(trajs,1)
 end
 fprintf('\n\n');
 
-% --- 口径1: 'simple' (core口径: 起点平移 + 全局长度匹配, 无旋转) ---
 fprintf('=== 口径1: simple (core: 起点+长度匹配, 无旋转) ===\n');
 for k = 1:size(trajs,1)
     tr = trajs{k,2};
@@ -44,13 +38,11 @@ for k = 1:size(trajs,1)
     fprintf('  %-14s ATE = %8.2f m  (scale=%.4f)\n', trajs{k,1}, rmse, s);
 end
 
-% --- 口径2: 版本A 首100帧Sim3 ---
 fprintf('\n=== 口径2: 版本A (首100帧Sim3锚定, ablation Table口径) ===\n');
 for k = 1:size(trajs,1)
     fprintf('  %-14s ATE = %8.2f m\n', trajs{k,1}, compute_metrics_with_alignment(trajs{k,2}, gt, L));
 end
 
-% --- 对照: per-lap(oracle) 上界 ---
 fprintf('\n=== 对照: per-lap oracle (每lap独立Sim3对齐GT, 局部真实水平) ===\n');
 for k = 1:2
     pl = zeros(numel(bounds)-1,1);

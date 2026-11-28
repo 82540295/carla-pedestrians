@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""kbs/check_datasets.py — 论文数据集结构预检 (Town05/03/07/10HD + KITTI07, 2026-10-12)
-
-用法: python3 neuro/kbs/check_datasets.py
-逐个检查 compute_final_metrics.py / REGEN_PAPER_FIGURES.m 所需的 5 个文件:
-  ground_truth.txt           有头 CSV, 需 pos_x,pos_y,pos_z
-  fusion_pose.txt            有头 CSV, 需 pos_x,pos_y,pos_z (EKF 基线)
-  visual_odometry.txt        有头 CSV, 需 vo_x,vo_y,vo_z
-                             (KITTI07 本地缺失时可回退 ../KITTI_07/visual_odometry_ekf.txt)
-  slam_results/trajectories.mat   变量 exp_trajectory (NLM 轨迹)
-  slam_results/experiences.mat    变量 NUM_EXPS, EXPERIENCES (模板/节点/闭环计数)
-退出码: 0 = 全部就绪, 1 = 有缺失/错误
-"""
 import os, sys
 import pandas as pd, scipy.io as sio
 

@@ -1,6 +1,3 @@
-% tar_caliber_check.m — 独立验证 compute_metrics_with_alignment 在 Turnaround 的真实行为
-% 暴露中间量: procrustes 结构体字段 / 首100帧 scale / 旋转迹 / 首100帧拟合残差
-% 目的: 判定 28.7 坍缩是"函数性质"还是"transform.T/transform.c 字段缺失导致的静默错误"
 clear all; close all; clc;
 addpath('../07_test/test_imu_visual_slam/ablation');
 tar = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';
@@ -26,10 +23,8 @@ for i = 1:4
     if isfield(T,'R'), fprintf('  rot trace(R) = %.4f\n', trace(T.R)); end
     if isfield(T,'T'), fprintf('  (异常) 存在 T 字段 = %s\n', mat2str(T.T,3)); end
     if isfield(T,'c'), fprintf('  (异常) 存在 c 字段 = %s\n', mat2str(T.c,3)); end
-    % 首100帧拟合残差(procrustes 返回的 trA 是 X 对齐到 Y, 这里反向验证)
     fitRes = sqrt(mean(sum((trA(1:af,:) - gt(1:af,:)).^2,2)));
     fprintf('  首100帧 拟合残差(RMSE) = %8.2f m\n', fitRes);
-    % 全段 ATE, 用函数同款公式
     n = min(size(gt,1), size(tr,1));
     if isfield(T,'T') && isfield(T,'c')
         fullA = T.b * tr(1:n,:) * T.T + repmat(T.c(1,:), n, 1);

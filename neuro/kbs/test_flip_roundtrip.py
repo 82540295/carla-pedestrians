@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-# 验证 teleport-flip 闭环(拓扑鲁棒版):
-#   - 起点点位可能处于多路重叠/歧义区(get_waypoint 不同调用结果不同),
-#     故枚举该点所有候选车道, 对每条车道:
-#       去程链 = 沿 next() 同 road_id 的最长链(需≥0.85*OUT_DIST)
-#       回程链 = 去程终点的对向车道 next() 链(需≥0.85*OUT_DIST 且
-#                行驶方向须指回起点, 排除同向邻道)
-#     取 min(去程长, 回程长) 最大者, 消除非确定性
-#   - 掉头 = 唯一一次 teleport: 去程终点 → 对向车道, 朝向=对向车道真实yaw
-#   - 去程/回程各用独立 BehaviorAgent(干净 local_planner)
-# 统计 fence / z / 回到起点距离 / 横向偏移(CE残差), 判定机制可否集成。
 import math
 import sys
 import time
@@ -23,7 +13,6 @@ def aslist(x):
 
 
 def probe(m, wp, max_dist):
-    """沿 wp 方向(同 road_id) next() 链, 返回 (长度, 终点航点, 航点列表)"""
     u = wp
     pts = [wp]
     for _ in range(400):
@@ -56,8 +45,6 @@ def fwd_vec(lane):
 
 
 def pick_route(m, sx, sy, out_dist):
-    """枚举起点所有候选车道, 返回 (score, dep_lane, dep_end, dep_chain,
-    ret_lane, ret_chain, ret_target) 或 None"""
     wps = aslist(m.get_waypoint(carla.Location(sx, sy, 0.0),
                                 project_to_road=True))
     best = None
@@ -76,7 +63,6 @@ def pick_route(m, sx, sy, out_dist):
             ret_lane = dep_end.get_left_lane()
             if ret_lane is None:
                 continue
-            # 回程方向必须指回起点(排除同向邻道)
             fv = fwd_vec(ret_lane)
             if fv is None:
                 continue
@@ -88,7 +74,6 @@ def pick_route(m, sx, sy, out_dist):
             Lor, ret_end, ret_chain = probe(m, ret_lane, out_dist * 1.3)
             if Lor < 0.85 * out_dist:
                 continue
-            # 回程目标 = 回程链上离起点最近点
             ret_target = min(ret_chain,
                              key=lambda w: w.transform.location.distance(
                                  carla.Location(sx, sy, 0)))
@@ -207,7 +192,6 @@ def main():
     a1 = mkagent()
     out_end, zs1 = drive(a1, dep_end.transform.location, '去程', BUDGET)
 
-    # 掉头: teleport 到去程终点的对向车道(唯一一次不连续)
     flip_loc = carla.Location(ret_lane.transform.location.x,
                               ret_lane.transform.location.y,
                               car.get_transform().location.z + ZLIFT)

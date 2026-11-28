@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""pr_geom_gate.py — Phase 0.5: DINOv2 候选闭环的几何验证门 (SIFT + RANSAC 本质矩阵)
-
-对每个 DINOv2 候选事件 (取事件内相似度最高的一对 (j,i)):
-  SIFT 匹配 → findEssentialMat (fx=fy=320, 640x480, FOV90) → 内点数。
-真闭环 → 几何一致 → 多内点; 直路自相似假闭环 → 少内点。
-"""
 import os
 
 import cv2
@@ -119,7 +113,6 @@ for name, cfg in SETS.items():
         if s >= TAU:
             cands.append((j, i, s))
     evs = merge_pairs([(j, i) for (j, i, s) in cands])
-    # 每事件取最高 s 的代表对
     rep = []
     for (j0, i0) in evs:
         c = [(s, j, i) for (j, i, s) in cands if abs(i - i0) <= MERGE_GAP and abs(j - j0) <= MERGE_GAP]
