@@ -1,6 +1,6 @@
-# NeuroSLAM: IMU-Visual Fusion SLAM System
+# NeuroLocMap: Brain-Inspired 4-DoF Localization-Mapping
 
-A biologically-inspired SLAM system with IMU-visual fusion, featuring HART+Transformer visual template matching and 3D grid cell network for spatial representation.
+A brain-inspired 4-DoF localization-mapping system: hippocampal-entorhinal spatial representations, dual-stream visual processing, vestibular IMU fusion on a fixed-dimension 10-state EKF core, and a learned loop-closure line.
 
 ## 🎯 Key Features
 
@@ -24,7 +24,7 @@ neuro/
 ├── 07_test/                  # Testing and experiments
 ├── 08_draw_fig_for_paper/    # Paper figure generation
 ├── 09_vestibular/            # IMU processing and fusion
-└── kbs/                      # Paper draft (KBS submission)
+└── kbs/                      # Paper source and reproduction scripts (KBS)
 ```
 
 ## 📊 Datasets

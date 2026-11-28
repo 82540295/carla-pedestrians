@@ -100,7 +100,7 @@ def main():
     ap.add_argument("--epochs", type=int, default=300)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--ft-kitti", action="store_true",
-                    help="按域微调: 把 KITTI07 加入训练集 (2026-11-16 导师批准)")
+                    help="按域微调: 把 KITTI07 加入训练集 (2026-11-16)")
     ap.add_argument("--ft-kitti09", action="store_true",
                     help="9c协议: 把 KITTI09 加入训练集, KITTI07 保持零样本评估 (2026-11-17)")
     args = ap.parse_args()

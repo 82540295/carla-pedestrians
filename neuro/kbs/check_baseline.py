@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""kbs/check_baseline.py — NLM 基线守护 (2026-10-17 用户约束: 原本性能不得弱化)
+"""kbs/check_baseline.py — NLM baseline guard
 
 约束: 任何算法改动后, 五场景 × 双口径 (Sim(3)/SE(3)) 全部指标不得劣于
 冻结基线 (容差 0.011, 与 se3_metrics.py 交叉校验口径一致)。
