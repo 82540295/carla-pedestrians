@@ -130,7 +130,7 @@ function normImg = hart_transformer_extractor(img)
         lstm_c = ventral_features;
     end
     
-    % LSTM门控（Plan B配置; 2026-11-16 导师批准: 网格搜索经环境变量覆盖, 缺省为原值）
+    % LSTM gating (Plan B: grid-search values come from environment variables, defaults as released)
     input_gate = str2double(getenv('HART_INPUT_GATE'));
     if isnan(input_gate), input_gate = 0.5; end
     forget_gate = str2double(getenv('HART_FORGET_GATE'));

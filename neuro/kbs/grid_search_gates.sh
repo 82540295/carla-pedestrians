@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================================
-# grid_search_gates.sh — HART 门控常数坐标式网格搜索 (导师批准 2026-11-16)
+# grid_search_gates.sh — coordinate grid search over the HART gate constants (2026-11-16)
 #
 # 前置: hart_transformer_extractor.m 已改为 getenv 读门控
 #       (HART_INPUT_GATE / HART_FORGET_GATE / HART_OUTPUT_GATE, 缺省 0.5/0.5/0.9)

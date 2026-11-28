@@ -5,7 +5,7 @@
   Table 3 五行 (CARLA 4: Town05/03/07/10HD + KITTI07 现实验证): NLM/EKF/VO 的
   full-Sim(3) RMSE + drift rate + 模板/节点/闭环计数 (experiences.mat)
 输出: neuro/kbs/final_metrics.json + 打印摘要
-注: 闭环计数口径 = 每 experience 首条 link (论文沿用此口径, 用户已确认)
+注: 闭环计数口径 = 每 experience 首条 link (论文沿用此口径)
 """
 import numpy as np, pandas as pd, scipy.io as sio, json, os, sys
 
