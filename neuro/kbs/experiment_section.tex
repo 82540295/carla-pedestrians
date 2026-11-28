@@ -162,7 +162,7 @@ On the real-world 692~m highway (KITTI~07), NeuroLocMap runs with the loop-closu
 
 \subsection{Discussion and Insights}
 
-\textbf{Performance Summary.} Figure~\ref{fig:performance_summary} summarizes the five-scenario comparison. Panel (a) shows NeuroLocMap below both baselines everywhere except the Town07 Sim(3) column, where EKF+scale is marginally best; panel (b) shows the improvement over the EKF under Sim(3) ($+$16.5\% to $+$59.3\%, bubble size proportional to route length); panel (c) shows the improvement over monocular VO ($+$33.7\% to $+$68.8\%). With only five scenarios we refrain from correlation statistics; the qualitative pattern is that the \emph{scale branch} contribution tracks the severity of the monocular scale error of each route (largest on Town05 and Town10HD, where the Sim(3)-fitted scale factors are 1.51 and 1.92), while the \emph{loop-line} contribution tracks genuine revisiting structure (7 accepted links on Town05/03/07, one inert link on Town10HD).
+\textbf{Performance Summary.} Figure~\ref{fig:performance_summary} summarizes the five-scenario comparison: NeuroLocMap lies below both baselines everywhere except the Town07 Sim(3) column, where EKF+scale is marginally best. Two patterns carry the reading. The scale branch tracks the severity of the monocular scale error, largest on Town05 and Town10HD, whose Sim(3)-fitted scale factors are 1.51 and 1.92; the loop line tracks genuine revisiting structure, with seven accepted links on Town05 and Town03 and one inert link on Town10HD. Five scenarios are too few to support correlation statistics, and none are drawn here.
 
 \begin{figure*}[!htbp]
     \centering
@@ -174,15 +174,7 @@ On the real-world 692~m highway (KITTI~07), NeuroLocMap runs with the loop-closu
     \label{fig:performance_summary}
 \end{figure*}
 
-\textbf{When Does NeuroLocMap Excel?} Three conditions emerge:
-
-\begin{itemize}
-    \item \textbf{Monocular Scale-Error Regime} --- the scale branch yields its largest gains wherever the VO scale error is large and systematic: on Town10HD the raw EKF converges to a fitted scale of 0.65 (a 35\% scale error) yet 18.61~m Sim(3) / 57.38~m SE(3); with the scale head the same core reaches 14.44~m / 49.88~m. The SE(3) caliber is where this matters: it is exactly the error the Sim(3) refit would otherwise absorb.
-
-    \item \textbf{Revisit-Rich Layouts} --- the experience map converts revisits into global constraints: Town05 (7 links) gains a further $-2.03$~m on the scaled core, Town03 (7 links) $-0.76$~m, whereas Town10HD's single inert link contributes nothing --- the system degrades gracefully to EKF+scale rather than being hurt.
-
-    \item \textbf{Real-World Transfer and Its Limits} --- on KITTI~07 the loop-closure line transfers zero-shot and delivers the $+$16.5\% (Sim(3)) / $+$1.5\% (SE(3)) margin; the scale head does not (Supplementary Section~S.1). The framework therefore remains effective on real data, but its simulated-data scale advantage is currently sim-only, and we say so.
-\end{itemize}
+\textbf{When Does NeuroLocMap Excel?} The same two patterns explain the gains. On Town10HD the raw EKF settles at a fitted scale of 0.65, a 35\% scale error, and 18.61~m (Sim(3)) / 57.38~m (SE(3)); the scale head brings the same core to 14.44 / 49.88~m, the difference being exactly what a Sim(3) refit would otherwise absorb. Loop links pay only where revisits are genuine: Town05 and Town03 gain a further $-2.03$~m and $-0.76$~m, whereas Town10HD's single inert link changes nothing and the system falls back to EKF+scale instead of being hurt. On KITTI~07 the split appears again --- the loop line transfers zero-shot and carries the margin, the scale head does not (Supplementary Section~S.1).
 
 \subsection{Closed-Loop Re-anchoring Benchmark}
 \label{sec:closed_loop}
@@ -249,32 +241,8 @@ Figure~\ref{fig:kitti_input_output} visualizes the framework's input-output rela
 
 Two honest observations follow. First, every scale-consistent published system sits below 1.2\% RTE: stereo geometry fixes the scale intrinsically, and the sole monocular entry is a learned depth network whose output is already metric. NeuroLocMap, by contrast, is monocular plus IMU with no external scale reference, and Supplementary Section~S.1 shows that on real KITTI imagery the global scale is not recoverable from motion; the raw RTE (94.7/101.1\%) is dominated by this single global offset (the trajectory spans 1.9$\times$ the GT length) and is therefore not comparable to scale-consistent systems. Second, even under the most favorable monocular protocol --- a 7-DoF Sim(3) alignment that removes the global scale --- the per-frame RTE (72.1/75.2\%) remains far above the published figures, and excluding the 50 largest per-frame errors still leaves 38.2/46.9\%. The residual is a systematic per-frame scale drift, the per-frame projection of the same unrecoverable global scale (Supplementary Section~S.1): a property of the up-to-scale VIO core, not of the loop-closure / scale-recovery layer this paper contributes. NeuroLocMap is best read as a loop-closure and global-consistency layer on top of an up-to-scale VIO core, rather than a per-frame odometry competitor to scale-consistent stereo systems.
 
-\textbf{Comparison with Learning-Based Methods.} Direct quantitative comparison with learning-based SLAM methods (DROID-SLAM~\cite{teed2021droid}, TartanVO~\cite{wang2021tartanvo}, DeepVO~\cite{wang2017deepvo}) is challenging due to fundamentally different evaluation protocols and training requirements. These methods require large-scale training datasets (e.g., TartanVO trained on the large-scale synthetic TartanAir benchmark), GPU-intensive inference, and do\-main-spe\-cif\-ic fine-tuning for deployment. Nevertheless, we provide contextual comparison where data is available:
-
-\begin{itemize}
-    \item \textbf{Accuracy}: published values use the official KITTI subsegment drift rate (trel), a different protocol from our terminal/length drift, so each is reported under its own protocol. DeepVO, trained on real KITTI sequences, reports 3.91\% trel on sequence~07; TartanVO, trained purely on synthetic data and transferred to KITTI without fine-tuning, reports 4.32\% trel on the same sequence. NeuroLocMap, with its learned components trained once on simulation and deployed zero-shot, attains 9.71\% terminal/length drift on KITTI~07 (2.9--11.7\% across the five test scenarios, Table~\ref{tab:results}).
-
-    \item \textbf{Computational Efficiency}: DROID-SLAM achieves state-of-the-art accuracy but runs at 4--5~FPS (slower than the 39--76~FPS of our reference implementation), limiting real-time deployment on embedded platforms.
-
-    \item \textbf{Interpretability}: NeuroLocMap's bio-inspired components (grid cells, HDC, experience map) offer explicit spatial representations that can be visualized and debugged, unlike black-box deep networks.
-
-    \item \textbf{Deployment Protocol}: NeuroLocMap's learned components are trained once on simulation and deployed zero-shot on all test sequences, including the real-world one, while learning methods often require per-domain adaptation.
-\end{itemize}
+\textbf{Comparison with Learning-Based Methods.} Quantitative comparison with DROID-SLAM~\cite{teed2021droid}, TartanVO~\cite{wang2021tartanvo} and DeepVO~\cite{wang2017deepvo} is awkward: they are trained on large datasets and scored with the KITTI subsegment drift rate, whereas our numbers are terminal/length drift. Under that caveat, DeepVO, trained on real KITTI, reports 3.91\% and TartanVO, trained on synthetic data only, 4.32\% on sequence~07, against 9.71\% for NeuroLocMap, whose learned parts are trained once in simulation and deployed zero-shot. DROID-SLAM reaches higher accuracy at 4--5~FPS where our reference implementation holds 39--76~FPS on a CPU. The trade is deliberate: accuracy on hard sequences given up in exchange for a fixed-dimension state that can be inspected cell by cell and deployed without per-domain adaptation.
 
 Our approach targets a different design point: interpretable, train-once real-time localization and mapping for resource-constrained platforms where learning-based methods may not be feasible. For applications requiring maximum accuracy with ample computational resources and training data, learning-based methods remain superior.
 
-\textbf{Limitations and Future Work.} While NeuroLocMap demonstrates strong per\-for\-mance across diverse scenarios, several limitations warrant discussion:
-
-\begin{itemize}
-    \item \textbf{Sim-to-Real Scale Gap}: the scale head transfers zero-shot within simulation (including the held-out town) but not yet to real imagery (Supplementary Section~S.1); closing this gap --- e.g., with scale supervision from sensors available on real vehicles --- is the main outstanding work item.
-
-    \item \textbf{4-DoF Constraint}: The current height-discretized orientation representation suits ground vehicles but may limit applicability to fully 6-DoF scenarios with aggressive 3D maneuvers. Future work will extend to spherical orientation encoding for aerial platforms.
-
-    \item \textbf{Template Man\-age\-ment}: The densest map (KITTI~07: 964 templates, $\sim$1.4 per meter) shows that on visually non-repeating scenes template creation is not yet sufficiently selective. Incorporating visual saliency or geometric verification could reduce false template creation and bound map size.
-
-    \item \textbf{Loop Verification}: Accepted loops rely on embedding gates only; Town07 shows the residual cost of a marginally wrong re-anchor. Geometric consistency checks on accepted loops could further harden the gate chain.
-
-    \item \textbf{Online Parameter Adaptation}: The framework uses fixed thresholds across scenarios (single global gate set, $\tau=0.94$). Learning-based or Bayesian approaches to automatically tune parameters based on environment characteristics could improve robustness.
-
-    \item \textbf{Scope and Statistical Limits}: all simulated results come from a single simulator (CARLA) plus one real-world sequence; each configuration is a single run without significance tests (Section~\ref{sec:ablation}); and the gate thresholds are fixed global constants whose sensitivity has not been swept. Cross-simulator validation and threshold-sensitivity studies are natural next steps.
-\end{itemize}
+\textbf{Limitations and Future Work.} Four limits remain. The scale head transfers zero-shot within simulation but not to real imagery (Supplementary Section~S.1); closing the gap with scale supervision from on-vehicle sensors is the main outstanding item. The 4-DoF representation suits ground vehicles but not aggressive aerial manoeuvres. Template creation is not selective enough on visually non-repeating scenes, where KITTI~07 reaches 964 templates, and loop acceptance rests on embedding gates alone; geometric verification could harden both. Finally, all results come from a single simulator plus one real sequence, from single runs without significance tests, and under one global gate set whose sensitivity has not been swept --- cross-simulator validation and threshold sweeps are the natural next steps.
