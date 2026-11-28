@@ -1,6 +1,3 @@
-% tar_reanchor_events.m — 用【真实16个闭环事件】(loop_constraint_events.mat) 复验全Sim(3)重锚
-% 与 tar_global_reanchor.m(4个lap边界)的区别: 事件集 = 系统真实记录的 NLM_LOOP_EVENTS
-% 目的: 确认 core 里用全部事件实现时机制仍成立 (事件间距323-1154帧, win=400)
 clear all; close all; clc;
 addpath('../07_test/07_test/test_imu_visual_slam/ablation');
 tar = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';
@@ -12,7 +9,6 @@ load(fullfile(tar,'a_final','loop_constraint_events.mat'), 'NLM_LOOP_EVENTS');
 win = 400;
 n = size(adisk,1);
 
-% 锚点窗口 = 首移动段 (自动跳过静止前导段)
 d0 = sqrt(sum((adisk - adisk(1,:)).^2,2));
 sra = find(d0 > 1, 1, 'first'); if isempty(sra), sra = 1; end
 aWin = adisk(sra : min(sra+win-1, n), :);
@@ -41,7 +37,6 @@ end
 
 fprintf('\n应用 %d/%d 事件\n\n', n_app, size(evs,1));
 
-% --- 两种论文口径 ---
 fprintf('=== 版本A (首100帧Sim3, ablation Table口径) ===\n');
 fprintf('  a_disk现状(A-fix平移)     = %8.2f m\n', compute_metrics_with_alignment(adisk, gt, L));
 fprintf('  a_disk + 全Sim(3)重锚(16ev)= %8.2f m\n', compute_metrics_with_alignment(corr, gt, L));

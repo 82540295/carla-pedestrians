@@ -6,7 +6,7 @@
 
 \begin{document}
 
-\noindent November 21, 2026
+\noindent November 28, 2026
 
 \vspace{1.5em}
 
@@ -19,7 +19,7 @@
 
 \vspace{0.8em}
 
-We are pleased to submit our manuscript entitled ``\textbf{Brain-Inspired 4-DoF Localization-Mapping: Complementary Vestibular-Visual Fusion with Spatial Cells}'' for consideration in \emph{Knowledge-Based Systems}.
+We are pleased to submit our manuscript entitled ``\textbf{Brain-Inspired 4-DoF Localization-Mapping with Hippocampal--Entorhinal Spatial Representations}'' for consideration in \emph{Knowledge-Based Systems}.
 
 \vspace{0.6em}
 
@@ -31,17 +31,17 @@ We believe this work fits the scope of \emph{Knowledge-Based Systems} for the fo
 
 \begin{itemize}
     \item \textbf{Explicit knowledge representation for spatial reasoning.} The experience map is a symbolic-topological knowledge structure (nodes, links, re-anchoring events) built on top of subsignal processing, making localization decisions auditable rather than opaque.
-    \item \textbf{Knowledge acquisition with minimal supervision.} All learned components are trained once in simulation and transferred to the real world zero-shot, an explicit study of how domain knowledge encoded in neural representations survives the sim-to-real gap --- reported honestly, including where it does not transfer.
+    \item \textbf{Knowledge acquisition with minimal supervision.} All learned components are trained once in simulation and transferred to the real world zero-shot; the resulting sim-to-real gap is measured and reported, including the settings in which transfer degrades.
     \item \textbf{Verifiable, reproducible claims.} Every headline number is evaluated under two alignment calibers (shape-only Sim(3) and rigid SE(3)), with datasets, trained weights, and evaluation scripts released in a public repository.
 \end{itemize}
 
 \vspace{0.6em}
 
-The full system outperforms a 10-state EKF visual-inertial baseline on all five evaluation scenarios (four simulated urban routes and the real-world KITTI 07 sequence) under both calibers, runs at 39--76 FPS on CPU (measured, no GPU), recovers $15\times$ more accumulated drift than the filter core on a dedicated closed-loop benchmark, and produces an interpretable topological experience map as a by-product of localization.
+The full system outperforms a 10-state EKF visual-inertial baseline on all five evaluation scenarios (four simulated urban routes and the real-world KITTI 07 sequence) under both calibers, runs at 39--76 FPS on CPU (measured, no GPU), reduces terminal displacement on a dedicated closed-loop benchmark from 842.54~m to 55.92~m, and produces an interpretable topological experience map as a by-product of localization.
 
 \vspace{0.8em}
 
-We confirm that this manuscript is original, has not been published previously, and is not under consideration by any other journal. All authors have approved the manuscript and agree with its submission. The authors declare no competing interests. Datasets, code, and trained models are publicly available at \url{https://github.com/OpenHUTB/carla-pedestrians}.
+We confirm that this manuscript is original, has not been published previously, and is not under consideration by any other journal. All authors have approved the manuscript and agree with its submission. The authors declare no competing interests. Code, trained models, and the intermediate products needed to reproduce every table are available at \url{https://github.com/OpenHUTB/carla-pedestrians} and, for the larger sequences, from the corresponding author on reasonable request.
 
 \vspace{0.8em}
 
@@ -51,11 +51,18 @@ Thank you for your consideration. We look forward to the reviewers' feedback.
 
 \noindent Sincerely,
 
-\vspace{1.5em}
+\vspace{1.2em}
 
 \noindent Haidong Wang (Corresponding author)\\
-Hunan University of Technology and Business\\
-Email: open@hutb.edu.cn\\
-On behalf of all authors
+School of Artificial Intelligence and Robotics, Hunan University of Technology and Business\\
+Xiangjiang Laboratory\\
+Email: open@hutb.edu.cn
+
+\vspace{1em}
+
+\noindent On behalf of all authors\\
+Haidong Wang\textsuperscript{1,2}, Rongbo Yang\textsuperscript{1}, Caixia Ning\textsuperscript{1}, Yang Gao\textsuperscript{1}, Xiangyu Liu\textsuperscript{1}\\
+\textsuperscript{1}School of Artificial Intelligence and Robotics, Hunan University of Technology and Business, Changsha 410205, China\\
+\textsuperscript{2}Xiangjiang Laboratory, Changsha, China
 
 \end{document}

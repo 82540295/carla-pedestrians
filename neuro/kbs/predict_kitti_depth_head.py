@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""P2 尺度头零样本预测 (KITTI07 新真VIO VO): 加载现成 pr_scale_head.pt (不重训),
-对新 npz (scale_series_KITTI07.npz, 对新VO重算) 的逐帧特征预测 log s,
-写 <KITTI07Data_IMU_Fusion>/depth_scale_head.txt (EKF 深度尺度支路输入,
-与 depth_scale.txt 同格式: 行 k=帧号(1-based) log_s inliers; 帧1=nan).
-
-不重训 → 与 CARLA 尺度线用同一头/同一归一化 (mu/sd 来自 checkpoint),
-保证口径一致 (train-once, zero-shot deploy).
-
-前置: scale_series_p1.py --seqs KITTI07 --with-davl2 已跑 (新 npz).
-用法: python predict_kitti_depth_head.py
-"""
 import sys
 import numpy as np
 import torch
@@ -20,7 +9,7 @@ from pr_scale_head import Head, load_set, SETS, HEAD_PT  # noqa: E402
 
 NAME = "KITTI07"
 
-ckpt = torch.load(HEAD_PT, map_location="cpu", weights_only=False)  # torch>=2.6 默认 weights_only=True; ckpt 含 numpy(mu/sd)
+ckpt = torch.load(HEAD_PT, map_location="cpu", weights_only=False)
 model = Head()
 model.load_state_dict(ckpt["state"])
 model.eval()

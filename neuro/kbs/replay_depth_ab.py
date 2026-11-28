@@ -1,17 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""P1.1/P2 EKF replay A/B 驱动: 指定深度文件跑 replay, 输出 sim3_full 对比。
-
-用法:
+"""
   python replay_depth_ab.py --sets Town05 Town03 Town07 Town10HD \
       --depth-file depth_scale_head.txt --deadband 0.15 --tag head015
-  python replay_depth_ab.py --sets Town05 --nodp --tag nodp      # 无深度基线
-行为 (每集):
-  1. replay 前备份 fusion_pose.txt → _p11_backup_20261014/<set>/fp_live.txt
-  2. 用 --depth-file / --nodp / 默认(目录内 depth_scale.txt) 跑 replay
-  3. replay 输出 fusion_pose → _p11_backup_20261014/<set>/fp_<tag>.txt
-  4. 恢复原 fusion_pose.txt
-  5. 打印 sim3_full RMSE: 活体 baseline / 本次 run
 """
 import argparse
 import os
@@ -64,7 +55,7 @@ def main():
         p = args.depth_file
         depth_arg = [p if os.path.isabs(p) else None]
         if depth_arg[0] is None:
-            depth_arg = None  # 相对名: 每集在各自目录找
+            depth_arg = None
     else:
         depth_arg = None
 
@@ -96,7 +87,6 @@ def main():
 
         live = sim3_full_rmse(os.path.join(b, "fp_live.txt"), gt)
         new = sim3_full_rmse(out_fp, gt)
-        # 恢复
         shutil.copy(os.path.join(b, "fp_live.txt"), fp_live)
         dep_msg = [l for l in r.stdout.splitlines() if "深度尺度" in l]
         dep_str = " | ".join(x.strip() for x in dep_msg[:2])

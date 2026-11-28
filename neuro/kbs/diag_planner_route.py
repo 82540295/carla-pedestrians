@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-# 诊断: 车在(167.2,59.5)朝+yaw0, 目标(265.2,59.5)
-#   A) 全新agent + set_destination
-#   B) 预置目的地agent: d = bp.find('car...') 不行; 用 BehaviorAgent 后先 set 再 tick 3次
-#   C) 全新agent + set_destination 后再 world.tick()*5
-# 打印每种方式的 waypoints_queue 数量/首点/尾点/总长, 定位"432路点绕中心"的成因。
-# 同时打印世界里的 vehicle actor 列表(排查残留旧车)。
 import math
 import sys
 import time
@@ -47,7 +41,6 @@ def main():
         pass
     m = world.get_map()
     bpm = world.get_blueprint_library()
-    # 清场
     for act in world.get_actors():
         if act.type_id.startswith(('vehicle.', 'walker.')):
             try:
@@ -70,7 +63,6 @@ def main():
         print('spawn失败'); return
     dest = carla.Location(265.2, 59.5, 0.0)
 
-    # A: 全新agent立即set_destination
     a = BehaviorAgent(car, behavior='cautious')
     a.follow_speed_limits(False)
     try:
@@ -81,7 +73,6 @@ def main():
     queue_info(a, 'A 全新agent立即set')
     a.destroy()
 
-    # B: 全新agent, set后sleep 0.3s
     b = BehaviorAgent(car, behavior='cautious')
     b.follow_speed_limits(False)
     try:
@@ -93,7 +84,6 @@ def main():
     queue_info(b, 'B set后sleep0.3')
     b.destroy()
 
-    # C: 全新agent, set后手动run_step 10次
     cc = BehaviorAgent(car, behavior='cautious')
     cc.follow_speed_limits(False)
     try:
@@ -109,12 +99,10 @@ def main():
     queue_info(cc, 'C set后run_step10次')
     cc.destroy()
 
-    # D: local_planner 直接 plan_route (不经过 agent)
     from agents.navigation.local_planner import LocalPlanner, Behavior  # noqa: E402
     lp = LocalPlanner(Behavior.CAUTIOUS, speed=12)
     car_id = car.id
     lp.set_destination(dest)
-    # plan_route 需要 world + car_id
     try:
         ok = lp.plan_route(world, car_id, False)
         print(f'  [D] plan_route直接: ok={ok}', flush=True)

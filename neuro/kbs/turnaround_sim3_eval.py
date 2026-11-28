@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-"""折返集 A/B 换算到论文口径(首100帧锚定 Sim(3) 7-DoF Procrustes, 3D)。
-复用 metrics_aligned.py 的对齐函数; 数据源 = MATLAB core 脚本已对齐好的
+"""
 trajectories.mat (exp_traj_aligned / fusion_pos_aligned / pure_visual_aligned /
-gt_pos_aligned), 保证与 Table 1 其余行完全同口径。
-用法: python turnaround_sim3_eval.py
 """
 import os
 
@@ -16,8 +13,6 @@ BASE = os.path.join(os.environ.get('NLM_DATA_ROOT',
 
 
 def align_metric(traj, gt, anchor=100):
-    """首 anchor 帧锚定 Sim(3) 7-DoF Procrustes (3D): 在锚定窗上拟合 s,R,t,
-    固定施加到整条轨迹。返回 (RMSE, 末端误差, 末端漂移%, GT 路径长度)。"""
     n = min(len(traj), len(gt)); traj, gt = traj[:n], gt[:n]
     a_gt, a_tr = gt[:anchor], traj[:anchor]
     gs, es = a_gt - a_gt.mean(0), a_tr - a_tr.mean(0)
@@ -46,7 +41,6 @@ def main():
         mat = loadmat(os.path.join(BASE, sub, 'trajectories.mat'))
         traj = np.asarray(mat[traj_var], dtype=float)
         gt = np.asarray(mat['gt_pos_aligned'], dtype=float)
-        # gt_pos_aligned 是GT自己对齐到自己=恒等, 直接用
         rmse, final, drift, L = align_metric(traj, gt)
         print(f'{label:14s} RMSE={rmse:8.2f}m  final={final:8.2f}m  '
               f'drift={drift:6.2f}%  (gt_len={L:.0f}m)')

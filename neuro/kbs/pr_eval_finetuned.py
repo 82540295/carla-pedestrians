@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""pr_eval_finetuned.py — P2: 微调头嵌入重算 (5 集) + Phase 0 协议 P/R 复评
-
-对每集:
-  1. 微调嵌入 = head(冻结 DINOv2 特征), L2 归一 → slam_results/pr_dinov2s_ft.npy
-  2. 同 Phase 0 协议 (arcΔ>50m 最相似, 事件合并, vs oracle GT R=5m) 算 P/R
-     —— 与零样本 (pr_dinov2s.npy) 并排对比, 验证 "假闭环下降 / 真闭环上升"。
-  3. 导出 MATLAB 用 .mat (pr_embeddings_ft.mat, 变量 pr_embeddings)。
-"""
 import os
 
 import numpy as np

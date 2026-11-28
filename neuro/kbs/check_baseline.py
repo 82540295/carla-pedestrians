@@ -1,28 +1,14 @@
 #!/usr/bin/env python3
-"""kbs/check_baseline.py — NLM 基线守护 (2026-10-17 用户约束: 原本性能不得弱化)
-
-约束: 任何算法改动后, 五场景 × 双口径 (Sim(3)/SE(3)) 全部指标不得劣于
-冻结基线 (容差 0.011, 与 se3_metrics.py 交叉校验口径一致)。
-任一指标劣化 → exit 1 (不合入)。
-
-用法:
-  python3 check_baseline.py                 # 重算并与冻结基线比对
-  python3 check_baseline.py --freeze        # 显式冻结当前重算值为新基线 (需慎用)
-  python3 check_baseline.py --offline       # 不重算, 仅校验仓内 JSON 与冻结基线一致
-
-数据源: ../data/01_NeuroSLAM_Datasets/<set>/slam_results/ (论文规范目录)
-冻结基线: baseline_frozen.json (随仓库提交; --freeze 重新生成)
+"""kbs/check_baseline.py — NLM baseline guard
 """
 import json, os, sys, subprocess
 
-# 锚定到脚本所在目录 (相对路径以 kbs/ 为基准)
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-TOL = 0.011  # 与 se3_metrics.py 交叉校验同口径
+TOL = 0.011
 FROZEN = 'baseline_frozen.json'
 
 def recompute():
-    """重算双口径全部指标 (调用两个指标入口, 输出即 current JSON)"""
     r1 = subprocess.run([sys.executable, 'compute_final_metrics.py'],
                         capture_output=True, text=True)
     if r1.returncode != 0:

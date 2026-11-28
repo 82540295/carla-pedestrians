@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# 隔离变量实验: 在已验证路线(167.2,59.5, yaw0)分别用 2020 与 2017 车辆
-# 投放(z+0.1)并直行, 统计碰撞。定位"采集器用2017反复撞wall/traffic_light"
-# 是车辆尺寸问题还是投放姿态/环境残留问题。
 import math
 import sys
 import time
@@ -18,7 +15,6 @@ def run_vehicle(world, bp_lib, model, sx, sy, zlift, frames=240):
     m = world.get_map()
     wp0 = aslist(m.get_waypoint(carla.Location(sx, sy, 0.0),
                                 project_to_road=True))[0]
-    # 清场(与采集器 clear_all_actors 等价但用 list 而非 filter, 防 API 漂移)
     for act in world.get_actors():
         if act.type_id.startswith(('vehicle.', 'sensor.', 'walker.')):
             try:
@@ -46,7 +42,6 @@ def run_vehicle(world, bp_lib, model, sx, sy, zlift, frames=240):
     col = world.spawn_actor(bp_lib.find('sensor.other.collision'),
                             carla.Transform(), car)
     col.listen(on_col)
-    # 直行控制
     for f in range(frames):
         ctl = carla.VehicleControl(throttle=0.6, brake=0, steer=0)
         car.apply_control(ctl)

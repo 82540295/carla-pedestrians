@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""pr_pnp_gate.py — Phase 0.5b: 基于位姿假设的 PnP 几何验证门 (判别力天花板测试)
-
-对每个 DINOv2 候选事件代表对 + 每个 oracle 真闭环对:
-  位姿假设 = GT 位置 + yaw (roll/pitch 常数安装偏置在两帧间相消, 不影响判别);
-  SIFT knnMatch (ratio 0.75) → cv2.triangulatePoints (P1, P2 由位姿假设)
-  → 内点: 两点前 + 深度 <200m + 两图重投影误差 <3px。
-真闭环: 位姿假设 ≈ 真实相对几何 → 多内点; 假闭环 (直路自相似, 假设位姿 = 前进 30-200m): 匹配三角化不一致 → 少内点。
-"""
 import os
 
 import cv2

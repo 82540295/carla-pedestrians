@@ -1,22 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""P1.0 三对比尺度序列 + 双侧 bias 测量 (纯 Python, 不碰现有管线).
-
-对每条序列计算三种"逐帧尺度序列"。它们都估计同一个量:
-    把 VO 的(尺度无关)位移映射到度量位移所需的尺度因子 s。
-  - GT 尺度      s_gt    = |dGT| / |dVO|            全帧, 真值参考 (所有序列)
-  - 运动学尺度    s_kin   = (|a_lat|/|w|) / v_vo      转弯帧, 现有 EKF 支路口径 (CARLA only)
-  - DAv2-PnP 尺度 s_depth = |t_PnP| / |dVO|           全帧, 需 torch+DAv2 (--with-davl2)
-
-输出 (每条序列):
-  - 指标表: scale_bias = median(s_est/s_gt) - 1 (系统性偏差)
-            scale_std  = std(s_est/s_gt)        (逐帧噪声)
-            退化率     = 无效帧占比
-  - 叠加对比图 (log 尺度)
-
-用法:
-  python scale_series_p1.py                       # GT + 运动学(CARLA) / GT(KITTI)
-  python scale_series_p1.py --with-davl2          # 额外加 DAv2-PnP (需 torch)
+"""
   python scale_series_p1.py --seqs Town05 KITTI07
   python scale_series_p1.py --out <dir>
 """
@@ -31,7 +15,6 @@ HERE = Path(__file__).resolve().parent
 BASE = Path(os.environ.get("NLM_WORK_ROOT", str(HERE / ".." / "data")))
 OUT_DEFAULT = HERE / "scale_p1"
 
-# CARLA 640x480, 默认 FOV=90deg -> fx=fy=(W/2)/tan(45)=320, cx=320, cy=240
 K_CARLA = np.array([[320.0, 0.0, 320.0], [0.0, 320.0, 240.0], [0.0, 0.0, 1.0]])
 # KITTI cam2 (gray image_0): fx=fy=707.0912, cx=601.8873, cy=183.1104
 K_KITTI = np.array([[707.0912, 0.0, 601.8873], [0.0, 707.0912, 183.1104], [0.0, 0.0, 1.0]])
@@ -63,13 +46,13 @@ SEQUENCES = {
         "K": K_CARLA, "carla": True, "img": r"(\d+)\.png",
     },
     "KITTI07": {
-        "dir": BASE / "_kitti07_newraw",   # [2026-10-15] 新真VIO VO (旧 BASE/"KITTI_07" 为合成管线)
+        "dir": BASE / "_kitti07_newraw",
         "gt": "ground_truth_ekf.txt", "vo": "visual_odometry_ekf.txt", "imu": None,
         "K": K_KITTI, "carla": False, "img": r"(\d+)\.png",
         "img_dir": "image_0", "img_fmt": "{:06d}", "img_off": 0,
     },
     "KITTI09": {
-        "dir": BASE / "_kitti09_fusion",   # [2026-11-17] kitti_prepare_fusion 转换 (真EKF重放, 微调源)
+        "dir": BASE / "_kitti09_fusion",
         "gt": "ground_truth.txt", "vo": "visual_odometry.txt", "imu": "aligned_imu.txt",
         "K": K_KITTI, "carla": True, "img": r"(\d+)\.png",
         "img_dir": "image_0", "img_fmt": "{:06d}", "img_off": 0,
@@ -128,8 +111,6 @@ def load_seq(cfg):
 # scale series
 # --------------------------------------------------------------------------- #
 def gt_scale_series(gt_p, vo_p, min_disp=0.02):
-    """s_gt[i] = |GT[i+1]-GT[i]| / |VO[i+1]-VO[i]|, 长度 N-1.
-    仅"车真的在动"的帧有效 (dGT 与 dVO 均显著) — 静止帧尺度不可观测, 比值只是 VO 漂移."""
     dgt = np.linalg.norm(np.diff(gt_p, axis=0), axis=1)
     dvo = np.linalg.norm(np.diff(vo_p, axis=0), axis=1)
     s = np.full(len(dvo), np.nan)
@@ -140,11 +121,6 @@ def gt_scale_series(gt_p, vo_p, min_disp=0.02):
 
 def kinematics_scale_series(accel, gyro, vo_p, vo_t,
                             omega_th=0.10, a_th=0.30, max_a=30.0, max_w=3.0):
-    """s_kin[i] = (|a_lat[i+1]|/|w[i+1]|) / v_vo[i], 长度 N-1, 转弯帧有效.
-
-    a_lat = 横向比力 (body y), w = 偏航率 (body z), v_vo = VO 区间速度.
-    与现有 EKF 转弯运动学尺度支路同口径 (|a_lat|/|w| = 度量速度).
-    """
     if accel is None or gyro is None:
         return None
     n = len(vo_p)
@@ -161,7 +137,6 @@ def kinematics_scale_series(accel, gyro, vo_p, vo_t,
     v_imu[m] = a_lat[m] / w[m]
 
     s = np.full(n - 1, np.nan)
-    # 对齐: 帧 i+1 的 IMU 状态 对应 区间 i (t -> t+1) 的 VO 速度
     if len(v_imu) >= n:
         vi = v_imu[1:n]
         mm = np.isfinite(vi) & (v_vo > 0) & np.isfinite(v_vo)
@@ -170,8 +145,6 @@ def kinematics_scale_series(accel, gyro, vo_p, vo_t,
 
 
 def windowed_cumulative_scale(gt_p, vo_p, W=50, min_win_disp=2.0):
-    """窗内累积位移比 (尺度是低频量, 累积位移主导 -> 比值稳定, 远优于逐帧).
-    s[c] = ||GT[c+W/2]-GT[c-W/2]|| / ||VO[c+W/2]-VO[c-W/2]||, 仅窗内 VO 位移>阈值有效."""
     n = len(gt_p)
     h = W // 2
     s = np.full(n, np.nan)
@@ -186,7 +159,6 @@ def windowed_cumulative_scale(gt_p, vo_p, W=50, min_win_disp=2.0):
 
 
 def windowed_median(s_perframe, W=50):
-    """滑动中值 (与 EKF 转弯窗中值同口径); 先对 nan 插值再滑窗."""
     if s_perframe is None or not np.any(np.isfinite(s_perframe)):
         return None
     x = s_perframe.astype(float).copy()
@@ -199,8 +171,6 @@ def windowed_median(s_perframe, W=50):
 
 
 def global_scale(src, dst):
-    """Umeyama Sim(3): dst ≈ s*(R@src.T).T + t, 返回真尺度 s* (src=VO -> dst=GT).
-    与论文 Sim(3) ATE 对齐同口径; 是全局单值, 不受窗内弦长/静止帧噪声污染."""
     src = src.astype(float); dst = dst.astype(float)
     n = src.shape[0]
     mu_s = src.mean(0); mu_d = dst.mean(0)
@@ -215,9 +185,6 @@ def global_scale(src, dst):
 
 
 def est_metrics(s_est, s_gt):
-    """估计序列 s_est 相对逐帧 GT 尺度 s_gt 的 bias + 一致性 (drift-aware).
-    比值 s_est/s_gt 中 VO 噪声相消: depth->|t_PnP|/|dGT|, kin->v_imu*dt/|dGT|.
-    逐帧口径天然适应尺度漂移, 不受单一 s* 假设限制."""
     if s_est is None:
         return None
     n = min(len(s_est), len(s_gt))
@@ -237,12 +204,6 @@ def est_metrics(s_est, s_gt):
 
 def davn2_pnp_scale_seq(cfg, data, device="cuda", max_frames=None,
                         da_model="depth-anything/Depth-Anything-V2-Metric-Outdoor-Small-hf"):
-    """DAv2 metric 深度 + ORB 匹配 + PnP -> s_depth[i] |t_PnP|/|dVO[i]|.
-
-    逐帧: DAv2 (transformers pipeline) 对帧 i+1 出 metric 深度, 帧 i/i+1 ORB 匹配,
-    inlier 2D 点用 metric 深度反投影成 3D (帧 i+1 相机系), PnP 解出到帧 i 相机系的
-    metric 平移 t_PnP, |t_PnP|/|dVO| 即该帧尺度.
-    """
     import cv2
     import torch
     from PIL import Image
@@ -273,11 +234,11 @@ def davn2_pnp_scale_seq(cfg, data, device="cuda", max_frames=None,
     bf = cv2.BFMatcher(cv2.NORM_HAMMING)
     s = np.full(n - 1, np.nan)
     inl = np.zeros(n - 1, dtype=int)
-    d_stat = np.full((n - 1, 4), np.nan)   # [median, std, p10, p90] metric 深度图 (P2 尺度头特征)
+    d_stat = np.full((n - 1, 4), np.nan)
     n_ok = 0
     img_dir = cfg["dir"] / cfg.get("img_dir", "")
     fmt = cfg.get("img_fmt", "{:04d}")
-    off = cfg.get("img_off", 1)  # CARLA: 行k↔文件k; KITTI: 行k↔文件k-1
+    off = cfg.get("img_off", 1)
     for i in range(n - 1):
         I0 = cv2.imread(str(img_dir / f"{fmt.format(i+off)}.png"), cv2.IMREAD_GRAYSCALE)
         I1 = cv2.imread(str(img_dir / f"{fmt.format(i+1+off)}.png"), cv2.IMREAD_GRAYSCALE)
@@ -321,11 +282,6 @@ def davn2_pnp_scale_seq(cfg, data, device="cuda", max_frames=None,
 # metrics
 # --------------------------------------------------------------------------- #
 def _write_depth_file(cfg, s, inl, n_frames):
-    """写 depth_scale.txt (EKF 深度尺度支路输入).
-
-    行 k (1-based 帧号) = 区间 k-1→k 的 log 尺度 + PnP 内点数; 帧 1 无前区间 → nan.
-    帧号 = ground_truth/visual_odometry 行号 (CARLA 口径: 行 k ↔ 图像 k).
-    """
     p = cfg["dir"] / "depth_scale.txt"
     with open(p, "w", encoding="utf-8") as f:
         f.write("# frame log_s inliers\n")

@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""pr_mapdist_gate.py — Phase 0.5c: 地图直线距离门 (正确的闭环判别器)
-
-候选 (j,i): DINOv2 sim >= τ 且 arcΔ >= D_arc (离开过); 接受为闭环 iff |p_i - p_j| <= R_loop。
-真闭环: 路径长但直线距离小 (回到原地); 假闭环 (直路自相似): 路径长且直线距离也长 (仍在前方)。
-只依赖轨迹位置, 无特征匹配。对 R_loop ∈ {5,10,15} × τ ∈ {0.6,0.7,0.8,0.9} 报 P/R (对同 R oracle)。
-"""
 import os
 
 import numpy as np

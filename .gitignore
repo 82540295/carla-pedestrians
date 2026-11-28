@@ -2,7 +2,6 @@
 # NeuroSLAM Project .gitignore
 # ==========================================
 
-# ============ Debug和临时文件 ============
 *DIAGNOSE*.m
 *CHECK*.m
 *FIX*.m
@@ -25,19 +24,16 @@
 *SUMMARIZE*.m
 *REGENERATE*.m
 
-# ============ Markdown文档 (保留核心README) ============
 *.md
 !README.md
 !**/README.md
 !LICENSE.md
 
-# ============ 临时脚本和批处理 ============
 *.bat
 *.txt
 !requirements.txt
 !**/README.txt
 
-# 中文临时文件
 *快速*.txt
 *一键*.txt
 *修复*.txt
@@ -62,7 +58,6 @@
 *提示词*.md
 *绘图*.md
 
-# ============ LaTeX编译产物 ============
 *.aux
 *.log
 *.bbl
@@ -79,7 +74,6 @@
 *.dvi
 *.ps
 
-# ============ 图片和媒体文件 ============
 *.pdf
 *.png
 *.jpg
@@ -89,17 +83,17 @@
 *.pptx
 *.ppt
 *.svg
-# 保留论文PDF
-!neuro/kbs/kbs_1/NeuroSLAM_KBS.pdf
+!neuro/kbs/NeuroSLAM_KBS.pdf
+!neuro/kbs/cover_letter_KBS.pdf
+!neuro/kbs/highlights.pdf
+!neuro/kbs/supplementary_KBS.pdf
 
-# ============ 压缩包 ============
 *.zip
 *.rar
 *.7z
 *.tar
 *.gz
 
-# ============ 数据文件 (太大) ============
 neuro/data/
 **/slam_results/
 **/comparison_results/
@@ -107,10 +101,8 @@ neuro/data/
 **/grid_search_results/
 *.mat
 *.csv
-# 保留小的示例数据
 !**/example_data/
 
-# ============ Python缓存 ============
 __pycache__/
 *.pyc
 *.pyo
@@ -124,13 +116,11 @@ build/
 .pytest_cache/
 .coverage
 
-# ============ MATLAB缓存 ============
 *.asv
 *.m~
 slprj/
 *.autosave
 
-# ============ IDE和编辑器 ============
 .vscode/
 .idea/
 *.swp
@@ -139,14 +129,11 @@ slprj/
 .DS_Store
 Thumbs.db
 
-# ============ 系统文件 ============
 *.prj
 Bin.prj
 
-# ============ 个人文件夹 ============
 机器人2301宁彩霞11/
 
-# ============ 特定目录排除 ============
 neuro/08_draw_fig_for_paper/*.png
 neuro/kbs/kbs_1/fig/
 neuro/kbs/kbs/
@@ -156,39 +143,20 @@ neuro/referance/
 neuro/paper_draft/
 resources/
 
-# ============ 保留的核心文件 (明确包含) ============
-# 这些文件即使匹配上面的规则也要保留
 !neuro/kbs/*.md
 !neuro/07_test/07_test/test_imu_visual_slam/core/README_test_imu_visual_fusion_slam2.md
 !neuro/07_test/07_test/test_imu_visual_slam/parameter_search/参数网格搜索指南.md
 carla/
 
-# ============ Agent运行时 / LaTeX编译 / 备份产物 ============
 .atomcode/
 *.xdv
 *.bak
 
-
-# ============ 复现资产例外 (可选提交, 约 10–15 MB) ============
-# 这些 .mat / .txt 让 Table 3 的 Ours / EKF+scale / ORB-only 列可复算,
-# 见 neuro/kbs/repro_assets/README.md
-!neuro/kbs/repro_assets/
-!neuro/kbs/repro_assets/**/*.mat
-!neuro/kbs/repro_assets/**/*.txt
-!neuro/kbs/repro_assets/**/*.md
-# 闭环线目录: 上面的 **/slam_results/ 会把整个目录判为忽略, 之后按文件名的放行规则
-# 无法生效 (git 不会进入被忽略的目录), 必须显式放行该目录本身
-!neuro/kbs/repro_assets/**/slam_results/
-!neuro/kbs/repro_assets/**/slam_results/**
-
-
-# 轨迹复现资产仅本地维护(桌面有副本), 不入公开仓库
 neuro/kbs/repro_assets/
 
-# 中文稿仅本地维护, 不入公开仓库
+neuro/kbs_zh/
 neuro/kbs/*_zh.tex
 
-# run outputs (来自复核者 (3) 包)
 **/dc_review_out/
 /results/
 neuro/results/

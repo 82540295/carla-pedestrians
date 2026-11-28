@@ -1,7 +1,3 @@
-% kb_s2_verify.m — win=250 vs 400 防伪验证 (per-lap oracle + 事件生效集)
-% 判据: S2 增益必须纯来自全局 Sim(3) 移除,
-%   per-lap 独立对齐 ATE 在 S2off vs S2on 间应基本不变 (无局部畸变/无GT泄漏).
-% 运行: matlab -batch "cd('../kbs'); kb_s2_verify"
 clear all;
 BASE = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion';
 gt     = csvread(fullfile(BASE, 'a_final', 'ground_truth_backup.txt'));
@@ -12,14 +8,13 @@ ev = M.NLM_LOOP_EVENTS;
 if size(ev, 1) == 5 && size(ev, 2) > 5, ev = ev'; end
 n = size(gt, 1);
 evs = sortrows(ev, 1);
-base = pres2;   % S2 输入 (已含 A-fix 爬坡)
+base = pres2;
 d0  = sqrt(sum((base - base(1,:)).^2, 2));
 sra = find(d0 > 1, 1, 'first');
 if isempty(sra), sra = 1; end
 
 disp(sprintf('n=%d events=%d  锚点窗起点 sra=%d', n, size(evs,1), sra));
 
-% --- 事件逐事件拟合尺度 (win=400 vs 250) ---
 fprintf('  %3s %7s %6s %14s %14s\n', 'k','t_now','seg_len','s@400','s@250');
 for k = 1:size(evs,1)
     t_now = evs(k,1);
@@ -43,7 +38,6 @@ for k = 1:size(evs,1)
     disp(line);
 end
 
-% --- S2 输出 ---
 out400 = s2run(base, evs, sra, 400, n);
 out250 = s2run(base, evs, sra, 250, n);
 

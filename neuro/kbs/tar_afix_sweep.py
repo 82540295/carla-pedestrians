@@ -1,21 +1,6 @@
 #!/usr/bin/env python3
-"""tar_afix_sweep.py — Turnaround 折返集 A-fix 闭环约束漂移场离线扫参.
-
-数据流(与 core/test_imu_visual_fusion_slam.m 输出级逐行同构):
-  base = dc_final/exp_trajectory.txt   (P1平滑 + DC v3注入, 无A-fix)
-  out  = base + L_field                (A-fix 闭环约束场, 主循环之后注入)
+"""
   L_field(t) = sum_k F_k(t)*c_k
-    默认形状(与core一致): F_k 在 [t_old_k, t_now_k) 按 raised-cosine 从0爬坡到1, 其余为0
-    c_k = -beta*clamp(r_k, +-STEP_MAX),  beta=1 记录时未触发钳位(max|c|=24.63<25) -> r_k=-c_k
-
-口径: 官方 'simple' 对齐(起点对齐原点+路径长度缩放, 无旋转; align_trajectories.m)
-      ATE = 对齐后逐帧 RMSE (2D=x,y / 3D 双口径校准)
-
-校准门槛: base ATE ~ 201.16, base+L(beta=1,cosine) ~ 172.12, 且逐帧 vs a_final 落盘轨迹.
-
-用法:
-  python3 tar_afix_sweep.py            # 校准+全量扫参
-  python3 tar_afix_sweep.py --calib    # 仅校准
 """
 import os
 import sys
@@ -30,7 +15,6 @@ def load(p):
 
 
 def simple_ate(gt, est, dim=3):
-    """官方 simple 对齐(无旋转): 起点归零 + 路径长缩放, 返回对齐后逐帧误差数组."""
     n = min(len(gt), len(est))
     gt, est = gt[:n], est[:n]
     g = gt - gt[0]
@@ -46,14 +30,10 @@ def rmse(err):
 
 
 def afix_field(events, n, shape='cosine', beta=1.0, clamp_max=25.0, window=None):
-    """复刻 core [A-fix] 注入块(632-657行). events=[t_now,t_old,cx,cy,cz] MATLAB 1-based.
-    shape: cosine(默认,=core)/linear/sqrt/quad/step_old/pulse
-    window: 非None时爬坡窗口改为 [t_now-window, t_now) 固定长度.
-    """
     L = np.zeros((n, 3))
     f = np.arange(n)  # 0-based; MATLAB f0 = f+1
     for t_now, t_old, cx, cy, cz in events:
-        r = np.array([-cx, -cy, -cz])  # 记录beta=1未钳位 -> r = -c
+        r = np.array([-cx, -cy, -cz])
         c = -beta * np.clip(r, -clamp_max, clamp_max)
         tn, to = int(t_now), int(t_old)  # 1-based
         if to >= tn or to < 1:
@@ -87,7 +67,6 @@ def afix_field(events, n, shape='cosine', beta=1.0, clamp_max=25.0, window=None)
 
 
 def sim3_first100(gt, est):
-    """compute_metrics_with_alignment 口径: 前100帧锚定 Sim(3) 7-DoF, 返回逐帧误差."""
     n = min(len(gt), len(est))
     gt, est = gt[:n], est[:n]
     g, e = gt[:100] - gt[:100].mean(0), est[:100] - est[:100].mean(0)
@@ -100,7 +79,6 @@ def sim3_first100(gt, est):
 
 
 def lap_bounds(gt, min_len=500):
-    """GT 距起点 <8m 视为回到起点, 切 lap 边界."""
     d = np.linalg.norm(gt - gt[0], axis=1)
     in_start = d[0] < 8
     bounds = [0]
@@ -111,7 +89,6 @@ def lap_bounds(gt, min_len=500):
         elif not in_start and d[i] < 8:
             in_start = True
     bounds.append(len(gt))
-    # 合并过短段
     out = [0]
     for b in bounds[1:-1]:
         if b - out[-1] >= min_len:
@@ -142,7 +119,6 @@ def main():
     print('=== Turnaround 离线扫参  n=%d  闭环事件=%d  gap[min,med,max]=[%d,%d,%d]  |c|rec_max=%.2fm'
           % (n, len(events), gaps.min(), int(np.median(gaps)), gaps.max(), cmax_rec))
 
-    # ---------- 校准 ----------
     L1 = afix_field(events, n, 'cosine', beta=1.0, clamp_max=25.0)
     print('\n--- 校准 (官方 simple 口径, 目标 base~201.16 / constraint~172.12) ---')
     for dim in (3, 2):
@@ -159,7 +135,7 @@ def main():
         print('  ⚠ 离线重建与落盘 a_final 不一致, 扫参结果仅供方向参考.')
     if calib_only:
         return
-    DIM = 2  # 文档 §8.1 数字(201.16/172.12)与2D匹配; 若2D偏差大自动切3D
+    DIM = 2
     rb2 = rmse(simple_ate(gt, base, 2))
     rb3 = rmse(simple_ate(gt, base, 3))
     if abs(rb3 - 201.16) < abs(rb2 - 201.16):
@@ -167,7 +143,6 @@ def main():
     base_r = rb3 if DIM == 3 else rb2
     print('  -> 采用 %dd 口径 (base=%.2f, 文档201.16; 3d=%.2f 2d=%.2f)' % (DIM, base_r, rb3, rb2))
 
-    # ---------- 扫参 ----------
     betas = [0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0]
     shapes = ['cosine', 'linear', 'sqrt', 'quad', 'step_old', 'pulse']
     windows = [None, 150, 400, 900]
@@ -187,7 +162,6 @@ def main():
         ws = 'all' if w is None else str(w)
         print('  %8.2f %5.2f %8s %5s %5.1f  %+7.2f%%' % (r, b, sh, ws, cm, (r - base_r) / base_r * 100))
 
-    # ---------- 分段(lap)ATE ----------
     best = rows[0]
     b, sh, w, cm = best[1], best[2], best[3], best[4]
     ws = 'all' if w is None else str(w)
@@ -204,7 +178,6 @@ def main():
     e = [rmse(simple_ate(gt, t, DIM)) for t in (base, out_best, ekf, vo)]
     print('  %-24s %10.2f %10.2f %10.2f %10.2f' % ('全段', e[0], e[1], e[2], e[3]))
 
-    # 逐帧误差落盘(画论文图用)
     nn = min(n, len(ekf), len(vo))
     np.savez('/tmp/tar_afix_best.npz',
              frame=np.arange(nn),

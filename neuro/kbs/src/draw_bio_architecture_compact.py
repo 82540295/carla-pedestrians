@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-紧凑版生物启发导航系统架构图
-- 长宽比4:3
-- 字体更大
-- 框更紧凑
-- 配色简洁清爽
-- 右侧融合清晰可见
-"""
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -16,30 +8,26 @@ import numpy as np
 from PIL import Image
 import os
 
-# 设置样式
 plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
-plt.rcParams['font.size'] = 12  # 增大基础字体
+plt.rcParams['font.size'] = 12
 plt.rcParams['axes.unicode_minus'] = False
 
-# 创建画布 - 4:3比例
 fig = plt.figure(figsize=(16, 12), facecolor='white')
 ax = fig.add_subplot(111)
 ax.set_xlim(0, 16)
 ax.set_ylim(0, 12)
 ax.axis('off')
 
-# ==================== 简洁配色方案 ====================
-COLOR_PERCEPTION = '#FFF8E7'      # 极淡米色
-COLOR_DECISION = '#FFF4E6'        # 极淡橙色  
-COLOR_BORDER = '#8B7355'          # 棕色边框
-COLOR_ARROW = '#6B5742'           # 深棕色箭头
-COLOR_TEXT = '#2C2416'            # 深棕色文字
-COLOR_VESTIBULAR = '#FFA726'      # 亮橙色（简洁）
-COLOR_VISUAL = '#66BB6A'          # 亮绿色（简洁）
-COLOR_GRID = '#42A5F5'            # 亮蓝色
-COLOR_ACTION = '#AB47BC'          # 亮紫色
+COLOR_PERCEPTION = '#FFF8E7'
+COLOR_DECISION = '#FFF4E6'
+COLOR_BORDER = '#8B7355'
+COLOR_ARROW = '#6B5742'
+COLOR_TEXT = '#2C2416'
+COLOR_VESTIBULAR = '#FFA726'
+COLOR_VISUAL = '#66BB6A'
+COLOR_GRID = '#42A5F5'
+COLOR_ACTION = '#AB47BC'
 
-# ==================== 左侧：Environment Input ====================
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(SCRIPT_DIR, '..', '..', 'data', '01_NeuroSLAM_Datasets', 'Town01Data_IMU_Fusion')
 
@@ -53,7 +41,6 @@ try:
                      linewidth=2.5, zorder=11)
     ax.add_patch(rect1)
     
-    # 标签
     ax.add_patch(FancyBboxPatch((0.4, 9.6), 1.8, 0.4, boxstyle="round,pad=0.05", 
                                facecolor='#4CAF50', edgecolor='white', linewidth=2))
     ax.text(1.3, 9.8, 'Town01', ha='center', va='center', 
@@ -80,11 +67,8 @@ try:
 except Exception as e:
     print(f"照片加载失败: {e}")
 
-# 标题
 ax.text(1.3, 10.5, 'Environment', ha='center', fontsize=15, weight='bold', color=COLOR_TEXT)
 
-# ==================== 中间：Perception Network ====================
-# 外框 - 更紧凑
 perception_box = FancyBboxPatch((2.8, 3.5), 5.5, 7.5, 
                                 boxstyle="round,pad=0.15", 
                                 facecolor=COLOR_PERCEPTION, 
@@ -97,18 +81,15 @@ ax.add_patch(perception_box)
 ax.text(5.55, 11.3, 'Perception Network', ha='center', fontsize=16, 
        weight='bold', color=COLOR_TEXT)
 
-# 大脑轮廓（更淡）
 brain = Ellipse((5.55, 7.3), 4.5, 5.5, facecolor='#FFE0B2', 
                 edgecolor=COLOR_BORDER, linewidth=1.5, alpha=0.12, zorder=2)
 ax.add_patch(brain)
 
-# ===== Vestibular System（更紧凑）=====
 vest_bg = FancyBboxPatch((3.2, 9.0), 4.7, 1.6, boxstyle="round,pad=0.08", 
                          facecolor=COLOR_VESTIBULAR, edgecolor='white', 
                          linewidth=2, alpha=0.35, zorder=3)
 ax.add_patch(vest_bg)
 
-# 半规管
 for i in range(3):
     arc = Wedge((3.8 + i*0.4, 9.8), 0.25, i*60, i*60+180, 
                width=0.07, facecolor=COLOR_VESTIBULAR, 
@@ -118,7 +99,6 @@ for i in range(3):
 ax.text(5.55, 10.4, 'Vestibular (IMU)', ha='center', 
        fontsize=13, weight='bold', color=COLOR_TEXT)
 
-# IMU输入
 for label, x in [('Accel.', 6.4), ('Ang.Vel.', 7.2)]:
     ax.add_patch(FancyBboxPatch((x, 9.5), 0.65, 0.5, boxstyle="round,pad=0.03", 
                                facecolor='white', edgecolor=COLOR_BORDER, linewidth=1.5))
@@ -133,7 +113,6 @@ ax.add_patch(visual_bg)
 ax.text(5.55, 8.7, 'Visual Cortex (RGB)', ha='center', 
        fontsize=13, weight='bold', color=COLOR_TEXT)
 
-# Dorsal通路（更简洁）
 ax.text(5.55, 7.5, 'Dorsal (Motion)', ha='center', 
        fontsize=11, weight='bold', color='#5E35B1')
 
@@ -156,7 +135,6 @@ for i, (label, x, y) in enumerate(dorsal_nodes):
                                linewidth=2.5, color='#7E57C2', zorder=4)
         ax.add_patch(arrow)
 
-# Ventral通路（更简洁）
 ax.text(5.55, 5.8, 'Ventral (Recognition)', ha='center', 
        fontsize=11, weight='bold', color='#E65100')
 
@@ -181,11 +159,9 @@ for i, (label, x, y) in enumerate(ventral_nodes):
                                linewidth=2, color='#FF6F00', zorder=4)
         ax.add_patch(arrow)
 
-# 算法标注（更大字体）
 ax.text(5.55, 4.5, 'CLAHE → Gaussian → Norm', ha='center', 
        fontsize=10, style='italic', color=COLOR_TEXT, alpha=0.7)
 
-# ==================== 右侧：Decision Network（重新设计）====================
 decision_box = FancyBboxPatch((8.6, 3.5), 4.8, 7.5, 
                               boxstyle="round,pad=0.15", 
                               facecolor=COLOR_DECISION, 
@@ -198,7 +174,6 @@ ax.add_patch(decision_box)
 ax.text(11.0, 11.3, 'Decision Network', ha='center', fontsize=16, 
        weight='bold', color=COLOR_TEXT)
 
-# === 姿态表征（并排）===
 # 3D Grid Cells
 grid_box = FancyBboxPatch((8.95, 9.2), 1.8, 1.5, 
                           boxstyle="round,pad=0.08", 
@@ -221,8 +196,6 @@ ax.text(11.95, 10.3, 'Head Dir.', ha='center', fontsize=12, weight='bold', color
 ax.text(11.95, 10.0, 'Cells', ha='center', fontsize=12, weight='bold', color='white')
 ax.text(11.95, 9.6, '(yaw)', ha='center', fontsize=10, color='white')
 
-# === 融合模块（更清晰）===
-# 融合框
 fusion_box = FancyBboxPatch((9.2, 7.0), 3.6, 1.7, 
                             boxstyle="round,pad=0.1", 
                             facecolor='#E1BEE7', 
@@ -232,7 +205,6 @@ ax.add_patch(fusion_box)
 ax.text(11.0, 8.4, 'Sensory Fusion', ha='center', 
        fontsize=13, weight='bold', color=COLOR_TEXT)
 
-# 融合节点（大字体）
 fusion_nodes = [
     ('Spatial\nAttn', 9.7, 7.5),
     ('LSTM', 11.0, 7.5),
@@ -246,7 +218,6 @@ for label, x, y in fusion_nodes:
     ax.text(x, y, label, ha='center', va='center', 
            fontsize=10, weight='bold', color='white')
 
-# 连接
 for i in range(len(fusion_nodes) - 1):
     x1, y1 = fusion_nodes[i][1], fusion_nodes[i][2]
     x2, y2 = fusion_nodes[i+1][1], fusion_nodes[i+1][2]
@@ -255,7 +226,6 @@ for i in range(len(fusion_nodes) - 1):
                            linewidth=3, color='white', zorder=5)
     ax.add_patch(arrow)
 
-# === Experience Map（简化）===
 exp_box = FancyBboxPatch((9.2, 4.7), 3.6, 1.8, 
                          boxstyle="round,pad=0.1", 
                          facecolor='#81C784', 
@@ -269,7 +239,6 @@ ax.text(11.0, 5.7, 'Loop Closure', ha='center',
 ax.text(11.0, 5.3, 'Map Relaxation', ha='center', 
        fontsize=10, color='white')
 
-# === 输出（更清晰）===
 output_box = FancyBboxPatch((9.4, 3.8), 3.2, 0.6, 
                             boxstyle="round,pad=0.05", 
                             facecolor='#FF7043', 
@@ -279,7 +248,6 @@ ax.add_patch(output_box)
 ax.text(11.0, 4.1, 'Control: Steering + Acceleration', ha='center', 
        fontsize=11, weight='bold', color='white')
 
-# ==================== 箭头连接（简化）====================
 # Environment → Perception
 arrow1 = FancyArrowPatch((2.4, 8.5), (2.75, 9.5),
                         arrowstyle='->', mutation_scale=25, 
@@ -290,7 +258,6 @@ arrow2 = FancyArrowPatch((2.4, 5.5), (2.75, 5.8),
 ax.add_patch(arrow1)
 ax.add_patch(arrow2)
 
-# Perception → Decision（主箭头）
 arrow3 = FancyArrowPatch((8.4, 9.8), (8.9, 9.8),
                         arrowstyle='->', mutation_scale=30, 
                         linewidth=4, color=COLOR_ARROW)
@@ -301,7 +268,6 @@ arrow4 = FancyArrowPatch((8.4, 7.0), (9.15, 7.5),
 ax.add_patch(arrow3)
 ax.add_patch(arrow4)
 
-# Decision内部连接
 arrow5 = FancyArrowPatch((10.8, 9.15), (10.8, 8.8),
                         arrowstyle='->', mutation_scale=20, 
                         linewidth=2.5, color='white')
@@ -315,8 +281,6 @@ ax.add_patch(arrow5)
 ax.add_patch(arrow6)
 ax.add_patch(arrow7)
 
-# ==================== 最右侧：输出图标 ====================
-# 方向盘
 steering = Circle((14.3, 8.0), 0.6, facecolor='#757575', 
                  edgecolor='#212121', linewidth=2.5, zorder=5)
 ax.add_patch(steering)
@@ -325,7 +289,6 @@ ax.add_patch(Circle((14.3, 8.0), 0.2, facecolor='white',
 ax.plot([13.9, 14.7], [8.0, 8.0], '-', color='#212121', linewidth=3, zorder=6)
 ax.text(14.3, 7.0, 'Steering', ha='center', fontsize=11, weight='bold')
 
-# 油门
 accel = Rectangle((13.9, 5.3), 0.8, 0.6, facecolor='#66BB6A', 
                  edgecolor='#2E7D32', linewidth=2.5, zorder=5)
 ax.add_patch(accel)
@@ -345,7 +308,6 @@ ax.add_patch(arrow9)
 
 plt.tight_layout()
 
-# 保存
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, '..', 'fig')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 plt.savefig(os.path.join(OUTPUT_DIR, 'bio_nav_architecture.pdf'),

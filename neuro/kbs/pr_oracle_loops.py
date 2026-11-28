@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""pr_oracle_loops.py — 真闭环上限 (DL-NLM Phase 0, 事件级)
-
-真闭环事件: 帧 i 与帧 j (j < i) 满足 dist3d(p_j, p_i) < R 且 arc[i] - arc[j] > D_arc
-(离开过 D_arc 以上再回来; 停车原地不动不算)。连续帧合并为一个闭环事件。
-"""
 import os
 import numpy as np
 

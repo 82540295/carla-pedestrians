@@ -1,10 +1,4 @@
 #!/bin/bash
-# run_scale_nlm_ab.sh — 尺度线 NLM 层 A/B (4 CARLA 集)
-# 口径: 深度尺度头 replay 变体 (fp_head030, db=0.30) 作为 NLM 的 EKF-odo 基座,
-#       P2S_*.m 驱动 (RESULT_SUBDIR=slam_results_scale_nlm, 不碰规范 p2ft 目录),
-#       每集跑完立即恢复活体 fusion_pose (基线文件必须原样归还)。
-# 前置: replay_depth_ab.py --depth-file depth_scale_head.txt --deadband 0.30 --tag head030
-#       已把变体存到 _p11_backup_20261014/<set>/fp_head030.txt
 set -e
 cd ../../neuro
 DATA=data

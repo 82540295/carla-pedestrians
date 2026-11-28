@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""draw_grid_cell_network.py — 3D 网格细胞网络示意图 (替换旧 FCC 晶格图).
-
-三个 panel, 全部对齐代码事实 (gc_iteration.m / main.m L136-164):
-  (a) 3D 活动包: GRIDCELLS 36^3 中的局域化高斯活动 (分布式群体编码)
-  (b) 可分离高斯激励核: 7x7x7, sigma=1.5; 3x3 平铺展示环面卷绕
-  (c) 4-DoF 编码: 网格细胞 (x,y,z) + 多层头方向细胞 psi
-"""
 import os
 import numpy as np
 import matplotlib
@@ -29,7 +22,6 @@ cx, cy, cz = 18, 18, 18
 x, y, z = np.meshgrid(np.arange(n), np.arange(n), np.arange(n), indexing="ij")
 act = np.exp(-((x - cx) ** 2 + (y - cy) ** 2 + (z - cz) ** 2) / (2 * 3.0 ** 2))
 act /= act.max()
-# 三层等活性壳 (近似 isosurface): 只画高活性点
 for thr, s, alpha in [(0.75, 6, 0.9), (0.45, 6, 0.45), (0.25, 4, 0.18)]:
     m = (act > thr) & (act <= thr + 0.30)
     ax_a.scatter(x[m], y[m], z[m], c=act[m], cmap="hot", s=s, alpha=alpha,
@@ -44,14 +36,12 @@ ax_a.set_title("(a) 3D activity packet ($36^3$ cells)", fontsize=11, pad=0)
 
 # ---------------------------------------------------------------- (b) ----
 ax_b = fig.add_subplot(1, 3, 2)
-# 激励核中心切片: K(a,b,c)=N(a;0,1.5)N(b;0,1.5)N(c;0,1.5), 7x7x7 支撑
 sig = 1.5
 half = 3
 g = np.exp(-np.arange(-half, half + 1) ** 2 / (2 * sig ** 2))
-k_slice = np.outer(g, g)  # z=0 中心切片
-# 3x3 平铺: 周围 8 块 = 环面卷绕后的邻域延伸, 中央为核本体
+k_slice = np.outer(g, g)
 tiled = np.block([[k_slice] * 3])
-tiled[7:14, 7:14] = 0  # 中央格留白画核本体
+tiled[7:14, 7:14] = 0
 ax_b.imshow(tiled, cmap="Greys", extent=[-10.5, 10.5, 10.5, -10.5],
             vmin=0, vmax=1.05, interpolation="nearest")
 im = ax_b.imshow(k_slice, cmap="YlOrRd", extent=[-3.5, 3.5, 3.5, -3.5],

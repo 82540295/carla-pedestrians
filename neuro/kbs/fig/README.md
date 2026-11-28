@@ -1,11 +1,10 @@
-# `fig/` 资产说明
+# `fig/` assets
 
-本目录既有论文实际编译的 7 张图，也有作图源文件（`.pptx`）和历史草稿图。
-`NeuroSLAM_KBS.tex` 只引用下面第一张表的 7 个 PDF；其余文件不参与编译。
+This directory holds the seven figures the paper actually compiles, the drawing sources (`.pptx`), and a few early drafts. `NeuroSLAM_KBS.tex` only references the seven PDFs in the first table; everything else here is unused.
 
-## 参与编译（7 张）
+## Referenced by the paper (7)
 
-| 图标签 | 文件 | 定义于 |
+| Label | File | Defined in |
 |---|---|---|
 | `fig:3D_grid_cell_network` | `fig/3d_grid_cell_network.pdf` | `sec_method_expanded.tex` |
 | `fig:ablation_and_vt` | `fig/ablation_unified.pdf` | `experiment_section.tex` |
@@ -15,13 +14,13 @@
 | `fig:representative_performance` | `fig/representative_performance.pdf` | `experiment_section.tex` |
 | `fig:system_overview` | `fig/2_framework.pdf` | `sec_method_expanded.tex` |
 
-## 不参与编译
+## Not compiled
 
-- `1_abstract.pdf`（0.8 MB）——图形摘要候选，投稿系统单独上传，正文未排版引用；
-- `ekf_curve_KITTI07 / MH_03 / Town01 / Town02 / Town03 / Town05 / Town07 / Town10HD.pdf`
-  与 `vt_growth_all_datasets.pdf`——早期草稿的逐集曲线，当前稿已不再使用（Town01/02 也不在主表）；
-- 作图源文件 `.pptx`（5 个，合计约 21.8 MB）已移至 `docs/src/`，并在 `.gitignore` 中加了 `neuro/kbs/fig/**/*.pptx` 防回流规则；重建 PDF 时从那里取。
+- `1_abstract.pdf` (0.8 MB) — graphical-abstract candidate, uploaded separately through the submission system and not typeset in the manuscript.
+- `ekf_curve_KITTI07 / MH_03 / Town01 / Town02 / Town03 / Town05 / Town07 / Town10HD.pdf` and `vt_growth_all_datasets.pdf` — per-sequence curves from earlier drafts, no longer used (Town01/02 are not in the final tables either).
+- Drawing sources `.pptx` (5 files, ~21.8 MB total) live in `docs/src/` and are ignored here via `neuro/kbs/fig/**/*.pptx` in `.gitignore`; rebuild the PDFs from there.
 
-## 重建
-结果类 4 张由 `../regen_figures.py` 生成（需 `neuro/data/` 下的轨迹）；
-方法类 3 张与 `1_abstract.pdf` 为 MATLAB/PPT 导出，仓库内不含重建脚本。
+## Rebuilding
+
+The four result figures are produced by `../regen_figures.py`, which needs the trajectories under `neuro/data/`.
+The three method figures and `1_abstract.pdf` are MATLAB/PPT exports; their rebuild scripts are not shipped.

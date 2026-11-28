@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""kbs/sweep_metrics.py — 汇总 /tmp/nlm_sweep_newfoot 各 (VT,CE) 组合的 ATE
-口径与 regen_ekf_curves.py 一致: 全轨迹 7-DoF Sim(3) Umeyama 对齐后逐帧 3D RMSE。
-用法: python3 kbs/sweep_metrics.py
-"""
 import glob, os
 import numpy as np
 import pandas as pd
@@ -13,7 +9,7 @@ SETS = {
     'Town01Data_IMU_Fusion': 'pos_x',
     'Town10HDData_IMU_Fusion': 'pos_x',
 }
-EKF = {  # 恢复EKF地基后的 ATE 基准 (regen_ekf_curves.py 输出)
+EKF = {
     'Town01Data_IMU_Fusion': 14.3,
     'Town10HDData_IMU_Fusion': 13.4,
 }

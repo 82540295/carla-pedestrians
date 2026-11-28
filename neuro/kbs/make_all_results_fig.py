@@ -1,13 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-全部效果对比总览图:
-  (a) Sim(3) 全重拟合 ATE: 5 集 x 4 配置
-  (b) SE(3) 刚性 ATE:      5 集 x 4 配置
-  (c) KITTI seq 07 外部基线 RTE (log)
-ATE 数字直接取 se3_metrics.json (单一来源);
-RTE 数字为 kitti_rte.py 实测 (复现: python3 kitti_rte.py)。
-输出: fig/all_results_overview.pdf + .png
-"""
 import json
 import numpy as np
 import os
@@ -60,7 +51,7 @@ def bar_panel(ax, metric, title, ylim):
         for j, (k, _) in enumerate(DS):
             v = row(k, key, metric)
             if v is None and key == 'NLM-fullsystem':
-                v = row(k, 'NLM-loopline', metric)  # KITTI 无全系统, 闭环线承载
+                v = row(k, 'NLM-loopline', metric)
             cx = x[j] + (off - 1.5) * w
             if v is None:
                 ax.text(cx, ylim * 0.03, 'n/a', ha='center', fontsize=6.5, color=C_GRAY)
@@ -82,7 +73,6 @@ fig, (axa, axb, axc) = plt.subplots(1, 3, figsize=(14.2, 4.0), dpi=300)
 bar_panel(axa, 'sim3_rmse', '(a) Sim(3) full refit (shape upper bound)', 64)
 bar_panel(axb, 'se3_rmse', '(b) SE(3) rigid (metric-scale caliber)', 70)
 
-# ---- (c) 外部基线 RTE (kitti_rte.py 实测, 2026-10-16) ----
 items = [
     ('SOFT-SLAM (stereo)', 0.65, C_GRAY, 1.0),
     ('VINS-Fusion (st+IMU)', 1.09, C_GRAY, 1.0),

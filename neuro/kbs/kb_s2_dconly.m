@@ -1,5 +1,3 @@
-% kb_s2_dconly.m — 复现 "仅DC(无A-fix) verA = 755m" 基线, 验证论文引用数字
-% DC-only = preS2 - L_field (L_field 按 core 公式从事件重算, 确定性)
 clear all; close all; clc;
 addpath('../07_test/07_test/test_imu_visual_slam/ablation');
 ad = '../data/01_NeuroSLAM_Datasets/Town01Turnaround_IMU_Fusion/a_final';
@@ -12,7 +10,6 @@ n = min([size(gt0,1), size(preS2,1), size(ekf,1)]);
 gt = gt0(1:n,:); preS2 = preS2(1:n,:); ekf = ekf(1:n,:);
 L = sum(sqrt(sum(diff(gt).^2,2)));
 
-% 按 core A-fix 公式重算 L_field
 f0v = (1:n)';
 L_field = zeros(n,3);
 for k = 1:size(evs,1)

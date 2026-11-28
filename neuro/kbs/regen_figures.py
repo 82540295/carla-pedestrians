@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-"""regen_figures.py — 重绘论文 4 张图（NLM 轨迹优先 slam_results_scale_nlm/ 全系统，
-缺失时回退 slam_results/ 闭环线并告警；EKF/VO 基线取自 final_metrics.json）。
-背景: MATLAB R2021b 本机不可用 (Settings 错误), 原图由 MATLAB 生成 (A4 页面+trim);
-本脚本直接生成 trim 后的内容尺寸 PDF, tex 中对应 includegraphics 的 trim 参数改为 0。
-
-输出 (neuro/kbs/fig/):
+"""
   representative_performance.pdf   6.6944 x 4.7917 in (482 x 345 pt, 2x2)
   performance_summary.pdf          6.4861 x 2.3889 in (467 x 172 pt, 1x3)
   ablation_unified.pdf             6.7083 x 3.3333 in (483 x 240 pt, 1x2)
   KITTI_07_input_output_visualization.pdf  7.7917 x 4.5417 in (561 x 327 pt, 2x2)
-
-口径: 7-DoF (Procrustes, 旋转+平移+均匀尺度) 全轨迹对齐, 与 compute_metrics_with_alignment.m 一致。
 """
 import os
 import sys
@@ -25,7 +18,6 @@ from scipy.io import loadmat
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = '../data'
-# 数据根可覆盖（与 se3_metrics.py 同约定），资产包可直接用来重绘：
 #   NLM_DATA_ROOT=<bundle>/datasets NLM_BACKUP_ROOT=<bundle>/_p11_backup_20261014
 DS    = os.environ.get('NLM_DATA_ROOT', os.path.join(_HERE, '..', 'data', '01_NeuroSLAM_Datasets')).rstrip('/')
 KITTI = os.environ.get('NLM_KITTI_DIR', os.path.join(_HERE, '..', 'KITTI_07')).rstrip('/')
@@ -36,7 +28,6 @@ if not os.path.isdir(DS):
     sys.exit(2)
 FIG = os.path.join(_HERE, 'fig')
 
-# ---------------- 论文现值 (Table 1, 2026-10-14 二次重采 final_metrics.json) ----------------
 _FALLBACK_EKF = {'Town05': 44.44, 'Town03': 23.36, 'Town07': 40.64, 'Town10HD': 18.61, 'KITTI07': 22.09}
 _FALLBACK_VO  = {'Town05': 48.26, 'Town03': 49.10, 'Town07': 50.07, 'Town10HD': 35.86, 'KITTI07': 27.84}
 
@@ -47,7 +38,6 @@ def _short(ds_key):
 
 
 def _load_baselines():
-    """EKF/VO 的 RMSE 从 final_metrics.json 取（单一来源），取不到才回退常量。"""
     import json
     try:
         t1 = json.load(open('../kbs/final_metrics.json'))['table1']
@@ -62,15 +52,10 @@ def _load_baselines():
 
 EKF_RMSE, VO_RMSE = _load_baselines()
 
-# 配色 (与原图一致: NLM 蓝 / EKF 浅橙 / VO 浅绿)
 C_NLM, C_EKF, C_VO = '#4490C2', '#F4A582', '#92C59B'
 C_GRAY = '#888888'
 
 
-# ---------------- 数据加载 ----------------
-# 2026-10-16 定调: 论文主形态 = NLM 全系统 (EKF+scale+闭环)。
-# CARLA 4 集 NLM 轨迹源优先 slam_results_scale_nlm (全系统), 回退 slam_results (闭环线);
-# KITTI07 无全系统 (零样本尺度支路失效), 保持闭环线 slam_results。
 def _nlm_dirs(ds):
     return ('slam_results',) if ds == 'KITTI07' else ('slam_results_scale_nlm', 'slam_results')
 
@@ -79,11 +64,6 @@ _FALLBACK_WARNED = set()
 
 
 def _pick(sub, ds, name):
-    """按 _nlm_dirs 顺序取第一个存在的文件；用了回退目录时告警一次。
-
-    资产包只带 slam_results/（闭环线），此时画出来的 NLM 曲线与正文 Table 3 的
-    Ours 列（slam_results_scale_nlm/ 全系统）不是同一条轨迹。
-    """
     dirs = _nlm_dirs(ds)
     for i, d in enumerate(dirs):
         p = f'{sub}/{d}/{name}'
@@ -110,7 +90,6 @@ def load_pos(path, poscols=None):
 
 
 def _result_file(sub, name, required=True):
-    """结果文件路径: 优先 slam_results/ (RERUN 新 run), 回退 dc_final/ (论文期 run)。"""
     for d in ('slam_results', 'dc_final'):
         p = f'{sub}/{d}/{name}'
         if os.path.exists(p):
@@ -121,7 +100,6 @@ def _result_file(sub, name, required=True):
 
 
 def procrustes_7dof(gt, est):
-    """full Sim(3) 对齐 — 与 compute_final_metrics.sim3_full 同式 (Table 1 口径)。"""
     n = min(len(gt), len(est)); gt, est = gt[:n].astype(float), est[:n].astype(float)
     ec, gc = est - est.mean(0), gt - gt.mean(0)
     U, S, Vt = np.linalg.svd(gc.T @ ec)
@@ -139,7 +117,6 @@ def load_ds(ds):
     if nlm_txt is not None:
         nlm = load_pos(nlm_txt)
     else:
-        # 新 run 产物为 trajectories.mat (变量 exp_trajectory), P2 定解口径
         nlm = None
         mp = _pick(sub, ds, 'trajectories.mat')
         if mp is not None:
@@ -148,10 +125,9 @@ def load_ds(ds):
             raise FileNotFoundError('exp_trajectory.txt / trajectories.mat')
     ekf = load_pos(f'{sub}/fusion_pose.txt')
     out = {'gt': gt, 'nlm': nlm, 'ekf': ekf, 'len_m': float(np.linalg.norm(np.diff(gt, axis=0), axis=1).sum())}
-    # VO 口径 = visual_odometry.txt (vo_x/vo_y/vo_z), 与 Table 1 同源 (compute_final_metrics)
     vo_p = f'{sub}/visual_odometry.txt'
     if ds == 'KITTI07' and not os.path.exists(vo_p):
-        vo_p = f'{KITTI}/visual_odometry_ekf.txt'  # VO 文件在 raw 转换目录
+        vo_p = f'{KITTI}/visual_odometry_ekf.txt'
     out['vo'] = load_pos(vo_p) if os.path.exists(vo_p) else None
     for name in ('nlm', 'ekf', 'vo'):
         T = out[name]
@@ -178,7 +154,7 @@ def load_euroc(mh_dir):
     for name, key in [('nlm', 'exp_trajectory'), ('ekf', 'fusion_data'), ('vo', 'pure_visual_traj')]:
         v = m[key]
         e = np.asarray(v[0]['pos'][0] if v.dtype.names else v, dtype=float).ravel().reshape(-1, 3)
-        A, s = procrustes_7dof(g, e)  # 论文口径: 7-DoF 再对齐
+        A, s = procrustes_7dof(g, e)
         n = min(len(g), len(A))
         A, g2 = A[:n], g[:n]
         err = np.linalg.norm(A - g2, axis=1)
@@ -195,8 +171,6 @@ def load_euroc(mh_dir):
 
 
 def _mat_field(E, name):
-    """展开 struct 字段 (1x1 标量数组的 object 数组) 为 float 向量
-    (MATLAB struct array 经 scipy loadmat 的加载形态)。"""
     v = np.asarray(E[name])
     if v.dtype == object:
         return np.concatenate([np.asarray(x, dtype=float).ravel() for x in v.ravel()])
@@ -219,13 +193,11 @@ def load_map(ds):
     vt = _mat_field(E, 'vt_id')
     vt_int = np.array([int(v) for v in vt])
     n_templates = int(len(np.unique(vt_int[vt_int > 0])))
-    # 顺序创建曲线: 到第 i 个节点为止出现过的不同模板数
     seen = set(); growth = np.zeros(n)
     for i in range(n):
         if vt_int[i] > 0:
             seen.add(vt_int[i])
         growth[i] = len(seen)
-    # 闭环计数 = Table 1 口径 (compute_final_metrics): 每条 link 满足 1 <= eid <= k (k 0-based)
     loops = []
     for k in range(n):
         try:
@@ -259,7 +231,6 @@ def style_ax(ax, fs=9):
     ax.set_axisbelow(True)
 
 
-# ---------------- 图1: representative_performance (482 x 345 pt) ----------------
 def fig_representative():
     names = ['Town05', 'Town10HD']
     ds_all = {nm: load_ds(nm) for nm in names}
@@ -270,7 +241,6 @@ def fig_representative():
 
     for row, nm in enumerate(names):
         d, mp = ds_all[nm], mp_all[nm]
-        # Metrics 柱状图
         ax = axes[row, 0]
         cats = ['RMSE/10', 'Drift (%)', 'RPE x10', 'VT/10', 'Loops']
         v_nlm = [d['nlm_rmse'] / 10, d['nlm_drift'], d['nlm_rpe'] * 10, mp['n_templates'] / 10, mp['n_loops']]
@@ -311,7 +281,6 @@ def fig_representative():
     return ta, tb, pa
 
 
-# ---------------- 图2: performance_summary (467 x 172 pt) ----------------
 def fig_performance_summary(ta, tb, mpa):
     ds_list = ['Town05', 'Town03', 'Town07', 'Town10HD', 'KITTI07']
     data = {}
@@ -386,7 +355,6 @@ def fig_performance_summary(ta, tb, mpa):
           f'mean impV(5集)={np.mean([v for v in imp_v if not np.isnan(v)]):.2f}%')
 
 
-# ---------------- 图3: ablation_unified (483 x 240 pt) ----------------
 def fig_ablation(ta, tb, mpa):
     ds_list = ['Town05', 'Town03', 'Town07', 'Town10HD', 'KITTI07']
     maps = {ds: load_map(ds) for ds in ds_list}
@@ -395,11 +363,10 @@ def fig_ablation(ta, tb, mpa):
     fig, axes = plt.subplots(1, 2, figsize=(483 / 72, 240 / 72), dpi=300)
     fs = 8.5
 
-    # (a) Town05 组件消融 (全系统时代 5 成分, sim3_full 口径)
     ax = axes[0]
     sub5 = f'{DS}/Town05Data_IMU_Fusion'
     comps = [('Full\n(EKF+scale+loop)', ta['nlm'])]
-    _ekfs = load_pos(f'{BK}/Town05/fp_head030.txt')  # EKF+scale replay (无闭环)
+    _ekfs = load_pos(f'{BK}/Town05/fp_head030.txt')
     comps += [('w/o loop\n(EKF+scale)', _ekfs),
               ('w/o scale\n(loop only)', load_pos(f'{sub5}/slam_results/exp_trajectory.txt')),
               ('EKF', ta['ekf']), ('VO', ta['vo'])]
@@ -449,7 +416,6 @@ def fig_ablation(ta, tb, mpa):
     print(f'[3/4] ablation_unified.pdf  OK  Full={ta["nlm_rmse"]:.2f} VO={ta["vo_rmse"]:.2f} EKF={ta["ekf_rmse"]:.2f}')
 
 
-# ---------------- 图4: KITTI_07_input_output (561 x 327 pt) ----------------
 def fig_kitti_io():
     sub = f'{DS}/KITTI07Data_IMU_Fusion'
     gt = load_pos(f'{sub}/ground_truth.txt')
@@ -457,7 +423,6 @@ def fig_kitti_io():
     if nlm_txt is not None:
         nlm = load_pos(nlm_txt)
     else:
-        # 2026-10-14: 新 run 产物为 trajectories.mat (变量 exp_trajectory), P2 定解口径
         nlm = None
         for d in ('slam_results_p2ft', 'slam_results', 'dc_final'):
             mp = f'{sub}/{d}/trajectories.mat'
@@ -475,7 +440,6 @@ def fig_kitti_io():
     fig, axes = plt.subplots(2, 2, figsize=(561 / 72, 327 / 72), dpi=300)
     fs = 8.5
 
-    # (a) Input images + heading  (单 axes 内 2x2 网格, extent 定位)
     ax = axes[0, 0]
     ax.set_xlim(0, 54); ax.set_ylim(0, 16); ax.set_aspect('auto'); ax.axis('off')
     ax.set_title('(a) Input: RGB Images + IMU Data', fontsize=fs + 0.5)
@@ -500,7 +464,6 @@ def fig_kitti_io():
         ax.add_patch(plt.Rectangle((x0, y0), cw, ch, fill=False, ec='k', lw=0.7, zorder=3))
         ax.text(x0 + 0.5, y0 + ch - 0.9, f'Frame {fr}', fontsize=fs - 1, color='white', zorder=4,
                 bbox=dict(boxstyle='round,pad=0.2', fc='#333333', alpha=0.75, ec='none'))
-        # heading arrow (GT 航向)
         g0, g1 = gt[fr], gt[min(fr + 3, n - 1)]
         ang = np.arctan2(g1[1] - g0[1], g1[0] - g0[0])
         cx, cy = x0 + cw / 2, y0 + ch / 2

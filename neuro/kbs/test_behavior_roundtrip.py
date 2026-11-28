@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-# 精确复现采集器驱动: teleport 到 (start, z+0.1), BehaviorAgent
-# 去程→out_dest, 到达后再 set_destination 回起点(让 local planner 自己掉头),
-# 记录每段 fence / z范围 / 是否到达。直接回答"采集器的驱动逻辑本身是否可行"。
 import math
 import sys
 import time

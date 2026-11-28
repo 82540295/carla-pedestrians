@@ -69,20 +69,31 @@
 
 \title{Brain-Inspired 4-DoF Localization-Mapping with Hippocampal--Entorhinal Spatial Representations}
 
-% e-mail to be filled in at proof stage (HUTB domain, hutb.edu.cn)
-\author[hutb]{Haidong Wang\corref{cor1}}
+% corresponding e-mail (HUTB domain, hutb.edu.cn)
+\author[hutb,xjl]{Haidong Wang\corref{cor1}}
 \ead{open@hutb.edu.cn}
 \author[hutb]{Rongbo Yang}
+\ead{825404295@qq.com}
+\author[hutb]{Caixia Ning}
+\ead{ningcaixia064@gmail.com}
+\author[hutb]{Yang Gao}
+\ead{1723196099@qq.com}
+\author[hutb]{Xiangyu Liu}
+\ead{2437318001@qq.com}
 \cortext[cor1]{Corresponding author.}
 
-\affiliation[hutb]{organization={Hunan University of Technology and Business},
+\affiliation[hutb]{organization={School of Artificial Intelligence and Robotics, Hunan University of Technology and Business},
+            city={Changsha},
+            postcode={410205},
+            country={China}}
+\affiliation[xjl]{organization={Xiangjiang Laboratory},
             city={Changsha},
             postcode={410205},
             country={China}}
 
 \begin{abstract}
     \sloppy
-    Monocular visual-inertial odometry recovers the shape of a trajectory but not its metric scale: the estimate is defined only up to a similarity transform, so the scale error enters every downstream quantity, and drift can be removed only where the vehicle recognises ground it has already mapped. This paper presents NeuroLocMap, a brain-inspired localization-mapping framework formulated in a four-degree-of-freedom (4-DoF) state, which couples vestibular--visual complementary fusion with hippocampal--entorhinal spatial representations. The pipeline combines dual-stream visual processing for appearance and motion, inertial integration, a three-dimensional grid-cell attractor for position encoding and an experience map for loop closure, all built on a fixed-dimension 10-state EKF core. Two train-once components are attached downstream of the filter: a scale-only monocular correction implemented as a lightweight head over a frozen depth model, and an embedding-based loop-closure channel. Across five scenarios, four CARLA towns (Town05/03/07/10HD) and one real highway sequence (KITTI~07), the full system reduces error against the 10-state EKF visual-inertial baseline on every scenario under both evaluation calibers: 16.5--59.3\% after a full-Sim(3) refit, which absorbs global scale and therefore bounds the achievable gain from above, and 1.5--33.9\% under the rigid SE(3) caliber, where an incorrect metric scale cannot be absorbed. On a closed-loop benchmark the experience-map re-anchoring reduces terminal displacement from 842.54~m to 55.92~m. The reference implementation runs at 39--76~FPS on a CPU without GPU acceleration, and its learned components transfer from simulation without per-domain retraining; the sim-to-real gap of the scale head is measured rather than assumed away.
+    Monocular visual-inertial odometry recovers the shape of a trajectory but not its metric scale: the estimate is defined only up to a similarity transform, so scale error propagates into every downstream quantity, and drift can be removed only where the vehicle recognises ground it has already mapped. This paper presents NeuroLocMap, a brain-inspired localization-mapping framework formulated in a four-degree-of-freedom (4-DoF) state that couples vestibular--visual complementary fusion with hippocampal--entorhinal spatial representations. The pipeline combines dual-stream visual processing for appearance and motion, inertial integration, a three-dimensional grid-cell attractor for position encoding and an experience map for loop closure, all on a fixed-dimension 10-state EKF core. Two train-once components sit downstream of the filter: a scale-only monocular correction over a frozen depth model, and an embedding-based loop-closure channel. Across five scenarios, four CARLA towns (Town05/03/07/10HD) and one real highway sequence (KITTI~07), the full system reduces error against the 10-state EKF visual-inertial baseline on every scenario under both evaluation calibers, including 1.5--33.9\% under the rigid SE(3) caliber, where an incorrect metric scale cannot be absorbed by the alignment. On a closed-loop benchmark the experience-map re-anchoring reduces terminal displacement from 842.54~m to 55.92~m. The reference implementation runs in real time on a CPU, and its learned components transfer from simulation without per-domain retraining.
 \end{abstract}
 
 \begin{keyword}
@@ -107,8 +118,8 @@ The contributions of this paper are as follows.
 \begin{itemize}
     \item \emph{Architecture.} Dual-stream visual processing, vestibular modelling and hippocampal--entorhinal spatial representations are coupled into a single 4-DoF pipeline, with the filter, the spatial cells and the experience map operating on one state rather than as stacked modules.
     \item \emph{Visual front-end.} An explicit template-creation operator replaces the fixed template set of RatSLAM; across the evaluated sequences the template count rises from 5 to 964, and it is this increase that sustains place discrimination under illumination and viewpoint change.
-    \item \emph{Fusion core.} A fixed-dimension (10-state), loosely coupled EKF whose gated branches are applied in a fixed order (Section~\ref{sec:deployed_filter}), so that the per-update cost is independent of the number of tracked features. Two train-once corrections, a scale-only head over a frozen depth model and a learned-embedding loop-closure line, sit downstream of the filter and do not write back into it.
-    \item \emph{Evaluation.} On five scenarios (CARLA Town05/03/07/10HD and KITTI~07) the full system reduces error against the 10-state EKF baseline on all five under the rigid SE(3) caliber, where an unrecovered scale cannot be absorbed ($+$1.5--33.9\%), and on the closed-loop benchmark it reduces terminal displacement from 842.54~m to 55.92~m. The map produced is a topological experience graph, inspectable by construction rather than by post-hoc visualisation; this is treated as a property of the design, not as a separate claim.
+    \item \emph{Fusion core.} A fixed-dimension 10-state EKF applies its gated branches in a fixed order, so per-update cost is independent of feature count; two train-once corrections, a scale-only depth-model head and an embedding-based loop-closure line, act downstream and never write back.
+    \item \emph{Evaluation.} On four CARLA towns and KITTI~07 the system reduces error against the EKF baseline on all five scenarios under the rigid SE(3) caliber, where an unrecovered scale cannot be absorbed, and cuts closed-loop terminal displacement from 842.54~m to 55.92~m; the resulting experience graph is inspectable by construction.
 \end{itemize}
 
 In knowledge-based terms, the experience map produced by our pipeline serves as an explicit and interpretable topological knowledge representation, and loop closure operates as retrieval over this representation together with consistency-based correction of it.
@@ -131,15 +142,15 @@ In knowledge-based terms, the experience map produced by our pipeline serves as 
 \section{Conclusion}
 \label{sec:conclusion}
 
-All simulated sequences come from CARLA towns collected by ourselves; no third-party SLAM benchmark (e.g., EuRoC) is evaluated, so cross-dataset generalisation of the map and gate parameters remains to be shown.
+We presented NeuroLocMap, a 4-DoF framework built on a fixed-dimension ten-state EKF. Dual-stream visual processing, vestibular--visual fusion, three-dimensional grid cells and head-direction layers run as one pipeline, not as stacked modules. On four CARLA towns and KITTI~07 the system beat the EKF baseline in all five scenarios. On the closed-loop benchmark the experience map cut terminal displacement from 842.54~m to 55.92~m.
 
-This paper presented NeuroLocMap, a brain-inspired localization-mapping framework formulated in a 4-DoF state and built on a fixed-dimension 10-state EKF core, in which dual-stream visual processing, vestibular--visual complementary fusion, a three-dimensional grid-cell attractor and multilayered head-direction cells operate as one pipeline rather than as stacked modules. Across four CARLA towns and one real highway sequence the full system reduced error against the 10-state EKF visual-inertial baseline on all five scenarios under both evaluation calibers, and on the closed-loop benchmark the experience-map re-anchoring reduced terminal displacement from 842.54~m to 55.92~m. The reference implementation ran at 39--76~FPS on a CPU without GPU acceleration, with learned components trained once in simulation and deployed without per-domain retraining.
-
-Three limitations bound these claims. The 4-DoF state assumes that pitch and roll remain small, which holds for road vehicles and indoor floors but not for aerial or legged platforms. The scale head is trained on simulated imagery, and its sim-to-real gap, although measured, remains the weakest link in the metric-scale chain. The node-level relaxation of Section~\ref{sec:loop_closure} is a reference formulation: in the configuration that produced all reported numbers the correction is carried by the anchoring--re-anchoring path, and the relaxation itself is not executed. Extending the state to 6-DoF, narrowing the scale gap with paired real and simulated data, and mapping the attractor dynamics onto neuromorphic hardware are the natural next steps.
+Four limits remain. Evaluation covers self-collected CARLA data and one real sequence. The 4-DoF state excludes aerial platforms. The scale head's sim-to-real gap is the weakest link in the metric chain. The node-level relaxation is a reference formulation and was not executed in the reported runs. Next come a 6-DoF state, paired real and simulated data for the scale gap, and a neuromorphic implementation of the attractor dynamics.
 
 \section*{Acknowledgements}
 
-The authors gratefully acknowledge the financial support provided by the Natural Science Foundation of Hunan Province (No.2024JJ6190), Scientific Research Project of Hunan Provincial Department of Education (No.22B0646), the Research on a New Generation of Brain-like Intelligent Computing Framework Based on Ultra-large-scale Real Neural Systems (24XJJCYJ01001), the Open Project of Xiangjiang Laboratory (No.23XJ03009), Research and Application of Key Technologies of Holographic Media Creativity Based on Multimodal AI Big Model (No.24XJ01001), and the Digital Intelligence+ Interdisciplinary Research Project of Hunan University of Technology and Business (No.2023SZJ19).
+
+This work was partially supported by the Key Project of Xiangjiang Laboratory (No.~25XJ02003), the Research on a New Generation of Brain-like Intelligent Computing Framework Based on Ultra-large-scale Real Neural Systems (No.~24XJJCYJ01001), and the ``Digital Intelligence +'' Interdisciplinary Research Project of Hunan University of Technology and Business (No.~2023SZJ19).
+
 
 \section*{Code availability}
 
@@ -151,11 +162,11 @@ The authors declare that they have no known competing financial interests or per
 
 \section*{CRediT authorship contribution statement}
 
-\textbf{Haidong Wang}: Conceptualization, Methodology, Software, Writing -- original draft. \textbf{Rongbo Yang}: Data curation, Validation, Writing -- review \& editing.
+\textbf{Haidong Wang}: Conceptualization, Methodology, Supervision, Writing -- review \& editing. \textbf{Rongbo Yang}: Methodology, Software, Validation, Writing -- review \& editing. \textbf{Caixia Ning}: Software, Validation. \textbf{Yang Gao}: Writing -- review \& editing. \textbf{Xiangyu Liu}: Writing -- review \& editing.
 
 \section*{Data availability}
 
-The CARLA datasets were collected with the open-source CARLA simulator (v0.9.16) using the collection code in the repository; the KITTI odometry benchmark is publicly available at \url{https://www.cvlibs.net/datasets/kitti/}. The repository at \url{https://github.com/OpenHUTB/carla-pedestrians} hosts the collection and evaluation code, the trained weights (\texttt{pr\_head.pt}, \texttt{pr\_scale\_head.pt}), and a table-by-table script map (\texttt{neuro/kbs/REPRODUCE.md}) that ties every number in this paper to the script that produced it. A minimal asset bundle (about 45\,MB) accompanies the repository: per sequence the ground truth, the EKF and VO outputs, the loop-line trajectories and the Town01 turnaround route with its loop-event log, which is enough to recompute the EKF, VO and loop-line rows of Table~\ref{tab:results} and the whole closed-loop benchmark in Section~\ref{sec:closed_loop}. Raw frames and the remaining trajectory directories are not tracked in the git repository because their combined size is in the tens of gigabytes; they are available from the corresponding author on reasonable request.
+The CARLA datasets were collected with the open-source CARLA simulator (v0.9.16) using the collection code in the repository; the KITTI odometry benchmark is publicly available at \url{https://www.cvlibs.net/datasets/kitti/}. The repository at \url{https://github.com/OpenHUTB/carla-pedestrians} hosts the collection and evaluation code, the trained weights (\texttt{pr\_head.pt}, \texttt{pr\_scale\_head.pt}), and a table-by-table script map (\texttt{neuro/kbs/REPRODUCE.md}) that ties every number in this paper to the script that produced it. The intermediate products needed to reproduce the tables (per sequence the ground truth, the EKF and VO outputs, the loop-line trajectories, and the Town01 turnaround route with its loop-event log) are distributed as a minimal asset bundle of about 45\,MB, available from the corresponding author on reasonable request and not tracked in the repository to keep the clone small; this bundle is sufficient to recompute the EKF, VO and loop-line rows of Table~\ref{tab:results} and the whole closed-loop benchmark in Section~\ref{sec:closed_loop}. Raw frames and the remaining trajectory directories are absent for the same reason, their combined size being in the tens of gigabytes, and are likewise available on request.
 
 %% Bibliography
 \bibliographystyle{elsarticle-num}
