@@ -89,8 +89,11 @@
 *.pptx
 *.ppt
 *.svg
-# 保留论文PDF
-!neuro/kbs/kbs_1/NeuroSLAM_KBS.pdf
+# 保留论文PDF（正文/投稿信/要点/补充材料）
+!neuro/kbs/NeuroSLAM_KBS.pdf
+!neuro/kbs/cover_letter_KBS.pdf
+!neuro/kbs/highlights.pdf
+!neuro/kbs/supplementary_KBS.pdf
 
 # ============ 压缩包 ============
 *.zip
@@ -169,23 +172,19 @@ carla/
 *.bak
 
 
-# ============ 复现资产例外 (可选提交, 约 10–15 MB) ============
-# 这些 .mat / .txt 让 Table 3 的 Ours / EKF+scale / ORB-only 列可复算,
-# 见 neuro/kbs/repro_assets/README.md
-!neuro/kbs/repro_assets/
-!neuro/kbs/repro_assets/**/*.mat
-!neuro/kbs/repro_assets/**/*.txt
-!neuro/kbs/repro_assets/**/*.md
-# 闭环线目录: 上面的 **/slam_results/ 会把整个目录判为忽略, 之后按文件名的放行规则
-# 无法生效 (git 不会进入被忽略的目录), 必须显式放行该目录本身
-!neuro/kbs/repro_assets/**/slam_results/
-!neuro/kbs/repro_assets/**/slam_results/**
-
-
-# 轨迹复现资产仅本地维护(桌面有副本), 不入公开仓库
+# ============ 复现资产: 仅本地维护, 不入公开仓库 ============
+# 论文把中间产物表述为"约 45 MB 最小资产包, 可向通讯作者索取", 因此这里整体忽略。
+# 若改成随仓库发布, 删除下面的忽略行, 并恢复以下放行规则:
+#   !neuro/kbs/repro_assets/
+#   !neuro/kbs/repro_assets/**/*.mat
+#   !neuro/kbs/repro_assets/**/*.txt
+#   !neuro/kbs/repro_assets/**/*.md
+#   !neuro/kbs/repro_assets/**/slam_results/
+#   !neuro/kbs/repro_assets/**/slam_results/**
 neuro/kbs/repro_assets/
 
 # 中文稿仅本地维护, 不入公开仓库
+neuro/kbs_zh/
 neuro/kbs/*_zh.tex
 
 # run outputs (来自复核者 (3) 包)

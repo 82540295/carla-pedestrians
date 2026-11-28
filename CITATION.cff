@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the manuscript below."
-title: "NeuroLocMap: Brain-Inspired 4-DoF Localization-Mapping with Spatial Cells"
+title: "NeuroLocMap: Brain-Inspired 4-DoF Localization-Mapping with Hippocampal--Entorhinal Spatial Representations"
 type: software
 authors:
   - family-names: "Wang"
@@ -9,10 +9,19 @@ authors:
   - family-names: "Yang"
     given-names: "Rongbo"
     affiliation: "Hunan University of Technology and Business"
+  - family-names: "Ning"
+    given-names: "Caixia"
+    affiliation: "Hunan University of Technology and Business"
+  - family-names: "Gao"
+    given-names: "Yang"
+    affiliation: "Hunan University of Technology and Business"
+  - family-names: "Liu"
+    given-names: "Xiangyu"
+    affiliation: "Hunan University of Technology and Business"
 repository-code: "https://github.com/OpenHUTB/carla-pedestrians"
 license: MIT
 version: "1.0.0"
-date-released: "2026-11-23"
+date-released: "2026-11-28"
 keywords:
   - brain-inspired SLAM
   - spatial cells
