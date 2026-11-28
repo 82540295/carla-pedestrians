@@ -26,7 +26,7 @@ Start from the repository root — the main README is there:
 | `scale_p1/` | scale-series intermediates written by `scale_series_p1.py` (Supplementary S.1 figure) |
 | `other/` | journal declaration form (`declarationStatement_kbs.docx`) |
 | `legacy/` | older LaTeX variants, not compiled |
-| `repro_assets/` | placeholder for the minimal asset bundle — see its `README.md` |
+| `repro_assets/` | minimal asset bundle, kept local and not tracked (see `.gitignore`); the manuscript offers it from the corresponding author on request |
 
 Only the files listed above are release documentation. The Chinese-language
 research notes that used to sit here (design log, intermediate result dumps,
