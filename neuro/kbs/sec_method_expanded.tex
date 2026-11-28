@@ -60,7 +60,7 @@ The visual front-end --- neuroanatomically, the dual ventral (``what'') and dors
 \end{equation}
 whose dimension is fixed by the map size rather than by scene content, analogous to the view-selective, position-invariant representations of IT cortex.
 
-\textbf{Visual Template Matching and Place Recognition.} Place recognition is achieved through template matching using cosine similarity, which is more robust than intensity-based metrics like sum-of-absolute-differences (SAD):
+\textbf{Visual Template Matching and Place Recognition.} Place recognition relies on template matching with cosine similarity. This is more robust than intensity metrics such as sum-of-absolute-differences (SAD):
 \begin{equation}
     d_{\cos}(\boldsymbol{\phi}_t,\boldsymbol{\phi}_i)=1-\frac{\boldsymbol{\phi}_t^\top\boldsymbol{\phi}_i}{\lVert\boldsymbol{\phi}_t\rVert\,\lVert\boldsymbol{\phi}_i\rVert}
 \end{equation}
@@ -73,7 +73,7 @@ with $\tau_{vt}$ set below the OpenRatSLAM default so that similar streets remai
 \textbf{Dual-Stream Architecture and Bio-Inspired Temporal Modeling.} Building upon the hierarchical feature extraction described above, our visual processing incorporates two key bio-inspired innovations: (1) dual-stream architecture mimicking ventral/dorsal path\-ways, and (2) a fixed-coefficient gated filter for temporal coherence without training data requirements.
 
 \textbf{Dual-Stream Visual Processing.}
-Following the dual-stream theory of biological vision~\cite{Goodale1992, Mishkin1983}, two channels read the same V1 output and separate layout from appearance. The oriented-gradient channel carries spatial structure and feeds the V1$\rightarrow$V4 stage; the ventral channel carries texture and contrast and stands for V4$\rightarrow$IT:
+Following the dual-stream theory of biological vision~\cite{Goodale1992, Mishkin1983}, two channels read the same V1 output and separate layout from appearance. The oriented-gradient channel carries spatial structure and feeds the V1$\rightarrow$V4 stage. The ventral channel carries texture and contrast and stands for V4$\rightarrow$IT:
 \begin{align}
     \mathbf{F}^{\text{grad}}_t    & = w_{\parallel} \|\nabla Z_t\| + w_{z} Z_t, \\
     \mathbf{F}^{\text{ventral}}_t & = w_{v} Z_t + w_{t} \sigma_{\text{local}}(Z_t) + w_{c} \mathcal{C}_\lambda(Z_t),
