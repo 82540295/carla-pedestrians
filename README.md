@@ -24,7 +24,7 @@ neuro/
 ├── 07_test/                  # Testing and experiments
 ├── 08_draw_fig_for_paper/    # Paper figure generation
 ├── 09_vestibular/            # IMU processing and fusion
-└── kbs/kbs_1/                # Paper draft (KBS submission)
+└── kbs/                      # Paper draft (KBS submission)
 ```
 
 ## 📊 Datasets
@@ -127,13 +127,13 @@ Results are saved to `neuro/data/`:
 
 ## 📝 Paper
 
-**Title**: NeuroSLAM: A Biologically-Inspired IMU-Visual Fusion SLAM System
+**Title**: NeuroLocMap: Brain-Inspired 4-DoF Localization-Mapping with Hippocampal--Entorhinal Spatial Representations
 
 **Status**: Under review (Knowledge-Based Systems)
 
-**LaTeX Source**: `neuro/kbs/kbs_1/NeuroSLAM_KBS.tex`
+**LaTeX Source**: `neuro/kbs/NeuroSLAM_KBS.tex`
 
-**PDF**: `neuro/kbs/kbs_1/NeuroSLAM_KBS.pdf`
+**PDF**: `neuro/kbs/NeuroSLAM_KBS.pdf`
 
 
 ## 🔧 Requirements

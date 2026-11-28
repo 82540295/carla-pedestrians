@@ -16,7 +16,7 @@ import os
 
 # 设置输出目录（跨平台相对路径）
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'kbs', 'kbs_1', 'fig')
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, 'kbs', 'fig')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # 设置全局字体

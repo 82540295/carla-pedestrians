@@ -159,8 +159,11 @@ python3 neuro/kbs/export_repro_bundle.py --src /path/to/runs --out neuro/kbs/rep
 python3 neuro/kbs/export_repro_bundle.py --src /path/to/runs --out neuro/kbs/repro_assets
 ```
 
-`neuro/kbs/repro_assets/` is `.gitignore`-exempt (about 13 MB) and is read
-directly by the evaluator, so no copying into `neuro/data/` is needed:
+`neuro/kbs/repro_assets/` is kept out of the repository (see the comment block
+in `.gitignore`); the manuscript states that the bundle is available from the
+corresponding author on reasonable request. If it is ever published with the
+repository, uncomment the release rules in `.gitignore`. When it exists locally
+it is read directly by the evaluator, so no copying into `neuro/data/` is needed:
 
 ```bash
 NLM_DATA_ROOT=neuro/kbs/repro_assets/01_NeuroSLAM_Datasets \
